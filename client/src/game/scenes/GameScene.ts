@@ -427,6 +427,20 @@ export class GameScene extends Phaser.Scene {
   }
   
   /**
+   * Get the map width
+   */
+  public getMapWidth(): number {
+    return this.mapWidth;
+  }
+  
+  /**
+   * Get the map height
+   */
+  public getMapHeight(): number {
+    return this.mapHeight;
+  }
+  
+  /**
    * Clean up scene resources
    */
   shutdown(): void {

@@ -519,7 +519,7 @@ export class AIManager {
     
     if (path && path.length > 1) {
       // Move along path
-      unit.moveTo(path);
+      unit.moveToGridPosition(path);
       await this.delay(500); // Wait for movement animation
     } else {
       // If no path, mark as acted
@@ -571,7 +571,7 @@ export class AIManager {
       
       if (path && path.length > 1) {
         // Move along path
-        unit.moveTo(path);
+        unit.moveToGridPosition(path);
         await this.delay(500); // Wait for movement animation
       } else {
         // If no path, mark as acted
