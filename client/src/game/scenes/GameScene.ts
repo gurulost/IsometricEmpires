@@ -1,13 +1,13 @@
 import * as Phaser from 'phaser';
 import { phaserEvents, EVENTS, COMMANDS } from '../utils/events';
-import { TerrainType, TERRAIN_TILES } from '../config/terrain';
+import { TerrainType, TERRAIN_TILES, TerrainTile } from '../config/terrain';
 import { FactionType } from '../config/factions';
 
 export default class GameScene extends Phaser.Scene {
   // Map properties
   private mapSize!: { width: number; height: number };
   private tileSize = 64; // Size of each tile in pixels
-  private mapLayers: { [key: string]: Phaser.Tilemaps.TilemapLayer } = {};
+  private mapLayers: { [key: string]: Phaser.GameObjects.Container | any } = {};
   private mapData: number[][] = [];
   
   // Game state
@@ -105,11 +105,11 @@ export default class GameScene extends Phaser.Scene {
   
   private initializeMapData(seed: number) {
     // Create a seeded random number generator
-    const random = new Phaser.Math.RandomDataGenerator([seed]);
+    const random = new Phaser.Math.RandomDataGenerator([seed.toString()]);
     
     // Initialize empty map data
     this.mapData = Array(this.mapSize.height).fill(0).map(() => 
-      Array(this.mapSize.width).fill(0)
+      Array(this.mapSize.width).fill(TerrainType.GRASS)
     );
     
     // Fill with basic terrain (simple procedural generation)
@@ -159,31 +159,31 @@ export default class GameScene extends Phaser.Scene {
   }
   
   private createMap() {
-    // Create a map representation
-    const map = this.make.tilemap({
-      tileWidth: this.tileSize,
-      tileHeight: this.tileSize / 2, // For isometric projection
-      width: this.mapSize.width,
-      height: this.mapSize.height
-    });
+    // Instead of using Phaser's tilemap (which requires specific tileset images),
+    // we'll render the map directly using graphics objects for simplicity
     
-    // Create placeholders for tiles
-    // In a full implementation, we would load a proper tileset
-    const tiles = map.addTilesetImage('tiles', null, this.tileSize, this.tileSize / 2);
+    // Clear any existing layers
+    this.mapLayers = {};
     
-    // Create a layer for the terrain
-    this.mapLayers.terrain = map.createBlankLayer('terrain', tiles, 0, 0);
+    // Create a container for all tiles
+    const tilesContainer = this.add.container(0, 0);
+    
+    // Track tiles by position for easy lookup
+    const tilesByPosition: { [key: string]: Phaser.GameObjects.Rectangle } = {};
     
     // Render the map as colored rectangles (placeholder for actual tiles)
     for (let y = 0; y < this.mapSize.height; y++) {
       for (let x = 0; x < this.mapSize.width; x++) {
         const terrainType = this.mapData[y][x];
-        const terrainConfig = TERRAIN_TILES[terrainType];
+        
+        // Calculate isometric position
+        const isoX = (x - y) * (this.tileSize / 2);
+        const isoY = (x + y) * (this.tileSize / 4);
         
         // Create a rectangle for each tile
         const tile = this.add.rectangle(
-          (x - y) * (this.tileSize / 2),  // Isometric X
-          (x + y) * (this.tileSize / 4),  // Isometric Y
+          isoX,  // Isometric X
+          isoY,  // Isometric Y
           this.tileSize,
           this.tileSize / 2,
           this.getTerrainColor(terrainType)
@@ -194,16 +194,16 @@ export default class GameScene extends Phaser.Scene {
         tile.on('pointerdown', () => this.handleTileClick(x, y));
         tile.on('pointerover', () => this.handleTileHover(x, y));
         
-        // Store reference to tile in map data
-        const mapTile = this.mapLayers.terrain.getTileAt(x, y, true);
-        mapTile.properties = {
-          x,
-          y,
-          terrainType,
-          gameObject: tile
-        };
+        // Add to container
+        tilesContainer.add(tile);
+        
+        // Store reference to tile by position
+        tilesByPosition[`${x},${y}`] = tile;
       }
     }
+    
+    // Store container as a "layer" for consistency
+    this.mapLayers.terrain = tilesContainer as any;
     
     // Center the camera on the map
     const mapCenterX = (this.mapSize.width - this.mapSize.height) * (this.tileSize / 2) / 2;
@@ -365,10 +365,13 @@ export default class GameScene extends Phaser.Scene {
   private tryPlaceBuilding(x: number, y: number, buildingType: string) {
     // Check if the terrain allows building placement
     const terrainType = this.mapData[y][x];
-    const terrain = TERRAIN_TILES[terrainType];
+    
+    // Get terrain properties - handle the enum/number issue with a type assertion
+    const terrain = TERRAIN_TILES[terrainType as unknown as TerrainType];
     
     if (!terrain.isWalkable) {
-      console.log(`Cannot place building on ${TerrainType[terrainType]}`);
+      // Use the enum value to get the string name
+      console.log(`Cannot place building on ${TerrainType[terrainType as unknown as TerrainType]}`);
       // Emit error feedback
       return false;
     }
