@@ -1,0 +1,223 @@
+Okay, let's craft a detailed plan to build this Polytopia-inspired, 2.5D isometric RTS game with a Book of Mormon theme. We'll aim for visual clarity, engaging gameplay, and strong thematic integration, using the factions you've outlined.
+
+Project Title (Working): Battles of the Covenant
+
+I. Concept Brief
+
+1. High-Level Pitch:
+"Battles of the Covenant" is a fast-paced, turn-based or real-time (TBD, lean towards RTWP - Real-Time with Pause for strategic depth) strategy game inspired by The Battle of Polytopia, set in the ancient Americas during the conflicts described in the Book of Mormon. Players lead distinct factions like the Nephites, Lamanites, and others, each with unique strengths, weaknesses, and thematic mechanics, vying for dominance through military conquest, cultural influence, or fulfilling unique historical/religious objectives.
+
+2. Core Concept:
+Players start with a single city and a basic unit. They explore a procedurally generated isometric map, gather resources (Faith, Food, Production), expand their territory by founding new cities or capturing existing ones, research technologies inspired by scriptural accounts, build specialized units and buildings, and engage in tactical combat. The game emphasizes clear faction asymmetry, streamlined progression (like Polytopia's tech tree), and strategic decision-making on a visually clear, stylized map. Unique mechanics like Faith, Pride, Dissent, and Conversion add thematic depth and strategic layers.
+
+3. Target Audience:
+
+Fans of strategy games like The Battle of Polytopia, Civilization, and accessible RTS games.
+Players interested in historical or religiously-themed settings.
+Gamers looking for a strategy experience with unique faction mechanics and clear visual presentation.
+4. Key Pillars:
+
+Thematic Immersion: Deeply integrate Book of Mormon narratives, cultures, and concepts into gameplay mechanics, units, technologies, and visuals.
+Faction Asymmetry: Each faction offers a distinct playstyle with unique units, abilities, strengths, weaknesses, and potential victory paths.
+Streamlined Strategy: Inspired by Polytopia – concise tech tree, clear resource management, accessible combat, focus on impactful choices rather than overwhelming complexity.
+Visual Clarity: Clean, stylized 2.5D isometric art style prioritizing readability of units, terrain, and game state over complex 3D realism.
+Strategic Depth: Simple rules lead to emergent complexity through faction interactions, terrain use, tech choices, and unique mechanics (Faith, Pride, etc.).
+5. Visual Style:
+
+Perspective: 2.5D Isometric grid.
+Aesthetic: Clean, stylized, potentially low-poly rendered as sprites or high-quality pixel art. Focus on distinct silhouettes, clear color palettes per faction, and readable icons. Terrain should be clear and impactful (e.g., distinct hills, forests, rivers). Inspired by Polytopia's visual identity but adapted to the Book of Mormon theme.
+UI: Modern, clean, and unobtrusive, using thematic elements subtly. High contrast and clear iconography are essential.
+6. Platform:
+
+Primary: Web Browser (HTML5, JavaScript/TypeScript)
+Potential Future: Mobile (iOS/Android), Desktop (via Electron/NW.js)
+II. Technical Design Document (TDD)
+
+1. Introduction & Goals
+This document outlines the technical plan for developing "Battles of the Covenant." The goal is to create a robust, maintainable, and performant web-based strategy game using Phaser 3 for the core game simulation and rendering, and React for the user interface overlay. This architecture prioritizes the 2.5D isometric visual style, gameplay clarity, and allows for flexible UI development.
+
+2. Technology Stack
+
+Game Engine: Phaser 3 (using TypeScript)
+Justification: Mature, feature-rich 2D engine with excellent support for isometric tilemaps, sprite rendering (WebGL/Canvas), input handling, animations, audio, and a well-defined game loop. Suitable for grid-based strategy and performs well in browsers. Familiarity from previous iterations.
+UI Framework: React (using TypeScript)
+Justification: Powerful for building dynamic, component-based UIs. Excellent ecosystem (state management, routing). Allows separation of UI logic from game logic. Familiarity from previous iterations.
+UI Components: shadcn/ui (built on Radix UI and Tailwind CSS)
+Justification: Provides accessible, composable, and easily themeable UI primitives. Tailwind allows for rapid styling consistent with the desired aesthetic.
+State Management (React): Zustand
+Justification: Simple, flexible, and performant state management solution for React UI state, complementing Phaser's internal state management. Already in use.
+Server-Side: Node.js (with TypeScript)
+Justification: Efficient for handling I/O, suitable for WebSocket communication, uses the same language (TypeScript) as the frontend.
+Multiplayer Communication: WebSocket API (using ws library on Node.js, native WebSocket in browser)
+Justification: Standard for real-time, low-latency communication required for multiplayer RTS.
+Build Tool: Vite
+Justification: Fast development server and optimized production builds. Good TypeScript and asset handling support. Already in use.
+Pathfinding (Phaser): Internal Phaser implementation or integrate easystar.js plugin.
+Justification: Phaser's grid-based nature simplifies pathfinding. easystar.js is a reliable A* implementation well-suited for tilemaps.
+3. Architecture
+
+Core Structure: A single-page web application.
+Rendering:
+Phaser Canvas: Renders the entire game world (isometric map, units, buildings, world effects). Configured with a transparent background. Occupies the main visual layer (z-index: 0).
+React DOM: Renders the entire UI overlay (HUD, menus, panels, tooltips, notifications) in HTML elements positioned absolutely above the Phaser canvas (z-index: 10+).
+Phaser-React Communication Bridge:
+Mechanism: Centralized Event Emitter (phaserEvents using EventTarget or a similar pub/sub library). Accessible via Phaser's registry.
+Phaser -> React: Phaser managers (ResourceManager, UnitManager, etc.) emit specific, documented events (EVENTS.RESOURCES_UPDATED, EVENTS.UNIT_SELECTED, etc.) when game state changes.
+React -> Phaser: React UI components (GameHUD.tsx, buttons) trigger actions by:
+Dispatching command events via the event emitter (e.g., phaserEvents.emit(COMMANDS.BUILD_UNIT, { type: 'melee' })). The GameScene listens for these command events.
+Alternatively: Obtaining a reference to the GameScene instance and calling specific public methods (e.g., gameScene.orderBuildUnit('melee')). Event emission is generally preferred for decoupling.
+Server Architecture:
+Node.js server handles client connections, manages game rooms, and acts as the authoritative source for multiplayer game state.
+Uses WebSockets for real-time communication.
+Employs a tick-based loop (ServerTickManager.ts) for synchronized state updates.
+4. Core Gameplay Systems (Implementation Details)
+
+4.1. Map & Rendering:
+Engine: Phaser 3.
+Type: Isometric Tilemap (scene.make.tilemap). Define tile dimensions appropriate for the art style (e.g., width: 64, height: 32).
+Tile Data: Each tile stores type (grass, forest, hill, water, etc.), walkable (boolean), resource (null or { type: 'Food' | 'Production' | 'Faith', amount: number }), potentially defenseBonus, movementCost.
+Rendering: Use Phaser TilemapLayer for base terrain. Use isometric sprites (Phaser.GameObjects.Sprite or custom classes extending it) for units, buildings, and map features (trees, rocks). Manage render depth carefully.
+Coordinate System: Use Phaser's isometric world coordinates. Provide utility functions to convert between screen coordinates, world coordinates, and tile coordinates.
+4.2. Entities (Units & Buildings):
+Base Classes: Unit.ts, Building.ts extending Phaser.GameObjects.Sprite or Phaser.GameObjects.Container.
+Properties: id, playerId, faction, type, health, maxHealth, stats (attack, defense, range, speed, etc.), position (tileX, tileY), sprite (isometric sprite reference), state (idle, moving, attacking, gathering, constructing).
+Representation: Use isometric spritesheets/atlases loaded via Phaser's loader. Implement animations (idle, walk, attack, gather, death) using Phaser's animation system.
+State Management: Implement state machines within entity classes or managers to handle behavior transitions.
+4.3. Input & Controls:
+Selection: Phaser input listeners (pointerdown, pointermove, pointerup). Implement click detection for single units/buildings and drag-selection for multiple units using Phaser.Geom.Rectangle. Highlight selected entities visually (e.g., outline, base circle).
+Commands:
+Right-Click: Context-sensitive. On empty walkable tile -> move; On enemy unit/building -> attack; On resource node (with worker selected) -> gather; On friendly building (with worker selected) -> repair/garrison (if implemented).
+UI Buttons (React): Trigger command events (e.g., COMMANDS.TRAIN_UNIT, COMMANDS.START_BUILDING_PLACEMENT) sent via the event bridge to GameScene.
+Keyboard Shortcuts: Implement in GameScene using this.input.keyboard.on('keydown-...'). Essential shortcuts: unit hotkeys (1-9), command hotkeys (A-attack, M-move, B-build, etc.), camera control, menu access.
+4.4. Movement & Pathfinding:
+System: Grid-based movement along calculated paths.
+Pathfinding: Use easystar.js integrated with Phaser. Configure it with the game map's walkability data and movement costs based on terrain. PathfindingManager.ts handles path requests.
+Execution: Units follow the path node by node, moving their isometric sprites accordingly. Implement smoothing between nodes if desired.
+Formations: Implement basic formation logic (e.g., simple line, box) in UnitManager.ts when moving multiple units. Calculate target offsets relative to the main destination point.
+4.5. Combat System (CombatManager.ts):
+Initiation: Triggered by attack commands or auto-aggro based on unit stance and range.
+Resolution: Tick-based or event-based. When an attack occurs:
+Check range.
+Calculate base damage (Attacker Attack vs Defender Defense).
+Apply faction/unit counter multipliers (Lamanite vs Nephite bonus, Stripling Warrior defense).
+Apply tech bonuses.
+Add slight randomization.
+Apply damage to defender's health.
+Check for defender death. Trigger death animation/effects and unit removal.
+Feedback: Visual effects (hit sparks, projectiles for ranged, death animations) rendered by Phaser. Audio SFX triggered. Damage numbers displayed briefly (can be handled by React UI via events).
+4.6. Resource System (ResourceManager.ts):
+Types: Define resources: Food (for units), Production (for buildings/tech - name TBD, maybe "Materials" or "Ore"?), Faith (for special abilities, cultural actions, related to population happiness/scriptures).
+State: Track resources per player (Map<playerId, { food, production, faith }>).
+Gathering: Workers assigned to resource nodes (Unit.ts state gathering). Timer-based resource gain based on RESOURCE_GATHER_RATE, carry capacity, and distance to drop-off (City Center). Faction bonuses apply.
+Nodes: Resource nodes on the map have a finite amount, decreasing with gathering. Visual updates needed (can be simple sprite changes or particle effects).
+Faith Generation: Link to population, specific buildings (Temple), or actions (scripture study tech).
+4.7. Building System (BuildingManager.ts):
+Placement: React UI triggers "Start Placement" event. GameScene handles preview sprite following cursor, validity checks (walkable, no conflicts, within borders) based on building footprint. React UI shows valid/invalid state. On click, Phaser confirms placement, deducts resources via ResourceManager, and BuildingManager creates the building instance.
+Construction: Buildings may have a construction timer (workers assigned speed it up). Show visual construction progress (e.g., scaffolding sprite, progress bar).
+Production: Buildings like Barracks queue units. Handle queue logic, timers, costs (UnitManager creates unit on completion near the building).
+4.8. Technology System (TechManager.ts):
+Data: Define tech tree in a configuration file/object (ID, name, description, cost, prerequisites, effects, unlocks, faction restrictions).
+Logic: TechManager tracks researched techs per player. Handles research requests (check prerequisites, resources via ResourceManager). Manages research timers.
+Effects: On research completion, TechManager applies effects by:
+Modifying base stats in UnitManager/BuildingManager for future entities.
+Iterating through existing player entities and applying stat buffs.
+Notifying UI/managers about unlocked units/buildings.
+UI: React TechTreePanel displays available/researched techs, costs, prerequisites. Communicates research requests to Phaser via event bridge.
+4.9. Faction System:
+Data: Player object stores selected faction. Config files define faction-specific base stats, bonuses, unique units/buildings/techs.
+Application: Managers (UnitManager, BuildingManager, ResourceManager, TechManager) query player faction to apply appropriate bonuses, filter available actions/units/techs, and calculate costs.
+Special Abilities: Triggered via React UI -> Event Bridge -> GameScene or dedicated AbilityManager. Implement logic (cooldowns, effects, targeting) within the relevant manager or ability system. Use visual/audio feedback.
+4.10. Special Mechanics (Faith/Pride/Dissent/Conversion):
+Keep Simple Initially: Start with Faith as a core resource/metric.
+Tracking: Add faith, pride, dissent properties to player state (managed server-side, mirrored client-side).
+Triggers:
+Faith: Increases with population, temples, certain techs/actions. Decreases with losses, pride?
+Pride: Increases with military success, wealth, certain techs. Decreases with losses, humility techs/actions?
+Dissent: Increases with low faith, high pride (?), losses, unmet population needs. Decreases with high faith, victories, specific buildings/techs.
+Effects:
+Faith: Enables abilities (Title of Liberty), buffs unit morale/defense, required for some techs/units (Stripling Warriors), drives conversion (Anti-Nephi-Lehies).
+Pride: Potential negative events (Jaredite Collapse), increased dissent, maybe temporary combat buffs?
+Dissent: Reduced production/resource gathering, unit debuffs, potential for units to defect (Conversion).
+Conversion: Implement logic in CombatManager or AbilityManager. Anti-Nephi-Lehies ability triggers on enemy morale break (need morale system). Lamanite "Converted Warrior" unit represents this. Mulekites might influence/convert faster in mixed cities.
+5. Factions (Technical Implementation)
+
+General: Create data structures (e.g., JSON files, TypeScript objects) defining faction specifics: startingBonuses, uniqueUnits, uniqueBuildings, uniqueTechs, abilityConfig. Managers use this data.
+1. Nephites:
+Units: Stripling Warriors (requires Faith check for recruitment/special defense?), Chief Judge (Hero unit, maybe provides area buff or unique action).
+Tech: Scripture/record-keeping techs grant research speed/cost reduction. Fortification techs are cheaper/more effective.
+Ability: "Title of Liberty" - AbilityManager applies temporary defenseMultiplier to all player units within range/globally when Faith > threshold.
+Weakness: Implement dissent mechanic triggered by pride or specific events, causing temporary production/combat penalties.
+2. Lamanites:
+Units: Berserker (high attack/speed, low defense melee unit), Converted Warrior (captured/converted enemy unit? Or unit representing converts?).
+Bonuses: Apply starting resource bonus in ResourceManager. Apply melee/speed bonuses in UnitManager stat calculation.
+Ability: "Blood Feud" - CombatManager checks if target is Nephite; if so, applies damage multiplier (attackMultiplier).
+Weakness: Susceptible to conversion - link to Anti-Nephi-Lehi ability trigger. Unity mechanic? Maybe tied to dissent - high dissent reduces combat effectiveness.
+8. Mulekites of Zarahemla:
+Bonuses: Faster population growth (link to city mechanics/food consumption). Diplomatic influence (placeholder for now, complex). Bonus in "multicultural cities" (requires tracking city origin/dominant culture).
+Units: Royal Envoy (diplomacy/influence unit), Zarahemla Guard (standard defensive unit?), Memory Seeker (captures knowledge/tech points?).
+Ability: "Cultural Reclamation" - Trigger on capturing specific sites or defeating specific units (Prophets?). Grants permanent player stat buffs or unlocks techs.
+Weakness: Start with low Faith. Vulnerable to cultural pressure (if implemented).
+6. Anti-Nephi-Lehies / Ammonites:
+Gameplay: Cannot initiate attacks (CombatManager checks faction before attack). Units have high defense/HP but low attack. Focus on Faith generation and spreading cultural influence.
+Units: Missionary (non-combat, converts adjacent neutral/enemy units slowly?), Stripling Youth (defensive only, high defense, maybe auto-generated when attacked?).
+Ability: "Covenant of Peace" - CombatManager checks enemy morale (needs morale system); if it breaks near ANLs, triggers conversion chance. Converted units switch playerId.
+Weakness: No offense. Highly vulnerable early. Need strong alliances/defense.
+7. Jaredites (Advanced):
+Units: Giant units (large sprite, high HP/attack, slow), War Elephant (powerful cavalry?), Etherian Prophet (high Faith generation, triggers events?).
+Mechanics: Strong base stats, but high Pride accumulation. Pride > 80% triggers negative events (civil war - units attack each other, resource penalties).
+Ability: "Prophetic Collapse" - Event triggered at very high Pride/low Faith. Massive map destruction, units killed, potential game end with unique scoring.
+6. User Interface (UI - React)
+
+HUD (GameHUD.tsx): Top bar (Resources, Faction, Menu button). Bottom panel (Minimap, Selected Entity Info, Action Buttons/Command Card). Use shadcn components, themed.
+Minimap: Canvas element within React component. Draw simplified map state (terrain colors, unit/building dots) based on data received from Phaser via events/state. Handle clicks to center Phaser camera.
+Selection Panel: Dynamically display info for selected unit(s) or building. Show stats, HP bar, production queue (with progress, cancel buttons), available actions (Train, Build, Attack, Patrol, Stances). Buttons trigger events back to Phaser.
+Tech Tree Panel (EnhancedTechTreePanel.tsx): Modal or dedicated screen. Visualize tech dependencies (lines connecting nodes). Group by category (tabs). Show costs, effects, prerequisites. "Research" button triggers event to Phaser. Update based on EVENTS.TECH_RESEARCHED.
+Notifications: System for displaying game events (unit complete, research complete, under attack, low resources) - perhaps using sonner.
+Menus: Main Menu, Lobby Screen, Settings (all React components).
+7. Multiplayer Architecture
+
+Server: Node.js + ws. Manages GameRoom instances.
+Authority: Server is authoritative over game state. Clients send commands/actions.
+State Sync:
+Tick Rate: ~15-20 ticks/sec (ServerTickManager).
+Updates: Server sends delta-compressed state updates each tick (or slightly less frequently) containing only changed entity properties (position, health, state) and resource amounts. Include server tickNumber and lastProcessedActionId per client.
+Client Prediction: Client applies movement/actions immediately for responsiveness.
+Server Reconciliation: Client receives server update. Reverts predicted state. Re-applies pending actions based on timestamps relative to server update timestamp. Corrects visual position if prediction diverged significantly.
+Communication: Use defined WebSocket message types with validation (server/lib/validation.ts). Actions include actionId.
+Latency Compensation: Basic prediction/reconciliation helps. Consider input delay or more advanced techniques if needed later.
+8. Art & Audio
+
+Art: Create isometric spritesheets for all units (idle, walk, attack, gather, death animations per faction), buildings (idle, construction, damaged states), terrain tiles, resource nodes, projectiles, and effects (explosions, buffs). UI icons for actions, techs, resources.
+Audio: SFX for unit commands (move, attack), combat (hits per weapon type, death), building (placement, construction complete, unit produced), resource gathering, UI clicks, notifications, ability activations. Thematic BGM loops for menus and gameplay (different tracks per faction?).
+9. Development Process & MVP
+
+Phase 1 (Core Mechanics - Single Player):
+Phaser setup with isometric map rendering.
+Implement ResourceManager, UnitManager, BuildingManager, PathfindingManager.
+Implement 1 Faction (e.g., Nephites) with basic units (Worker, Melee, Ranged) and buildings (City Center, Barracks).
+Basic resource gathering and unit production.
+Core React UI (HUD, simple selection panel).
+Basic movement and attack commands. CombatManager with simple resolution.
+Win/Loss condition (destroy enemy City Center).
+Phase 2 (Second Faction & Basic Tech):
+Implement Lamanites with unique aspects.
+Implement TechManager and a simplified tech tree (~5-10 techs).
+Implement EnhancedTechTreePanel UI.
+Phase 3 (UI Polish & Basic Multiplayer):
+Refine React UI (GameHUD, tooltips, notifications).
+Implement basic server structure (GameRoom, WebSocket handling).
+Implement client-server communication for joining rooms, basic actions (move, build).
+Implement initial state sync (full snapshots).
+Phase 4 (Multiplayer Refinement & Core Gameplay):
+Implement delta state updates, prediction/reconciliation.
+Implement Attack-Move, Patrol, Stances.
+Refine combat (counters).
+Phase 5+ (Expand): Add remaining factions, unique mechanics (Faith/Pride), advanced tech, abilities, improved AI, visual polish, sound design.
+10. Potential Challenges & Risks
+
+Multiplayer Synchronization: Achieving smooth, responsive, and cheat-resistant sync is complex. Requires careful implementation of prediction/reconciliation.
+Performance: Especially on the web. Optimizing isometric rendering, pathfinding, and AI for many units is crucial.
+Balancing: Asymmetric factions are hard to balance. Requires extensive playtesting.
+Complexity Creep: Special mechanics (Faith, Pride, Conversion) add depth but also complexity. Implement iteratively.
+Art Asset Production: Creating high-quality isometric sprites for multiple factions and states is time-consuming.
+This detailed plan provides a roadmap. Remember to start with the MVP and build iteratively, constantly testing and refining gameplay and technical implementation. Good luck, developers! Let's make "Battles of the Covenant" a truly great and unique game.
