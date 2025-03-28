@@ -1,197 +1,188 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { FactionType } from '@/game/config/factions';
-import { useGameState } from '@/lib/stores/useGameState';
-import { useAudio } from '@/lib/stores/useAudio';
+import { Button } from '../ui/button';
+import { useGameState } from '../../lib/stores/useGameState';
+import { useAudio } from '../../lib/stores/useAudio';
 import FactionSelect from './FactionSelect';
+import { FactionType } from '../../game/config/factions';
 
-// Main Menu component
 const GameMenu: React.FC = () => {
-  const { initGame } = useGameState();
-  const { toggleMute, isMuted, playHit } = useAudio();
+  const [selectedFaction, setSelectedFaction] = useState<FactionType>(FactionType.NEPHITE);
+  const gameStarted = useGameState(state => state.gameStarted);
+  const gamePaused = useGameState(state => state.gamePaused);
+  const gameOver = useGameState(state => state.gameOver);
+  const winner = useGameState(state => state.winner);
+  const setGameStarted = useGameState(state => state.setGameStarted);
+  const setGamePaused = useGameState(state => state.setGamePaused);
+  const setActivePanel = useGameState(state => state.setActivePanel);
+  const { playSound, toggleMuteMusic, toggleMuteSfx, muteMusic, muteSfx } = useAudio();
   
-  const [menuState, setMenuState] = useState<'main' | 'newGame' | 'options'>('main');
-  const [mapSize, setMapSize] = useState<'small' | 'medium' | 'large'>('medium');
-  const [playerFaction, setPlayerFaction] = useState<FactionType>(FactionType.NEPHITE);
-  const [opponents, setOpponents] = useState<number>(3);
-  
-  // Handle start game button
+  // Start new game
   const handleStartGame = () => {
-    playHit();
+    playSound('button_click');
     
-    // Initialize new game with selected settings
-    initGame({
-      mapSize,
-      playerFaction,
-      opponents,
-      seed: Math.floor(Math.random() * 100000)
-    });
+    // Initialize game with selected faction
+    setGameStarted(true);
+    setActivePanel(null);
+    
+    // This would normally dispatch an event to initialize the game in Phaser
+    console.log(`Starting new game with faction: ${selectedFaction}`);
   };
   
-  // Main menu screen
-  const MainMenu = () => (
-    <div className="space-y-6 text-center">
-      <h1 className="text-4xl font-bold">Land of Promise</h1>
-      <p className="text-muted-foreground">A Book of Mormon inspired strategy game</p>
-      
-      <div className="space-y-3 pt-6">
-        <Button 
-          className="w-full max-w-md" 
-          size="lg"
-          onClick={() => {
-            setMenuState('newGame');
-            playHit();
-          }}
-        >
-          New Game
-        </Button>
-        
-        <Button 
-          className="w-full max-w-md" 
-          size="lg" 
-          variant="outline"
-          onClick={() => {
-            setMenuState('options');
-            playHit();
-          }}
-        >
-          Options
-        </Button>
-      </div>
-      
-      <div className="text-xs text-muted-foreground mt-12 pt-6">
-        <p>Land of Promise v0.1.0</p>
-        <p>© 2025 All Rights Reserved</p>
-      </div>
-    </div>
-  );
+  // Resume paused game
+  const handleResumeGame = () => {
+    playSound('button_click');
+    setGamePaused(false);
+    setActivePanel(null);
+  };
   
-  // New game setup screen
-  const NewGameScreen = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold">New Game</h2>
-        <p className="text-muted-foreground">Configure your game</p>
-      </div>
-      
-      <div className="space-y-6">
-        <div>
-          <Label className="text-base">Choose your faction</Label>
-          <FactionSelect 
-            selectedFaction={playerFaction} 
-            onSelectFaction={setPlayerFaction} 
-          />
-        </div>
+  // Main menu (before game starts)
+  if (!gameStarted) {
+    return (
+      <div className="bg-black/80 rounded-lg p-8 max-w-3xl w-full">
+        <h1 className="text-4xl font-bold text-center mb-8 text-white">
+          Book of Mormon <span className="text-yellow-400">Kingdoms</span>
+        </h1>
         
-        <div>
-          <Label className="text-base mb-2 block">Map Size</Label>
-          <RadioGroup 
-            value={mapSize} 
-            onValueChange={(value) => setMapSize(value as 'small' | 'medium' | 'large')}
-            className="flex space-x-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="small" id="mapSmall" />
-              <Label htmlFor="mapSmall">Small</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="medium" id="mapMedium" />
-              <Label htmlFor="mapMedium">Medium</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="large" id="mapLarge" />
-              <Label htmlFor="mapLarge">Large</Label>
-            </div>
-          </RadioGroup>
-        </div>
+        <FactionSelect
+          selectedFaction={selectedFaction}
+          onSelectFaction={setSelectedFaction}
+        />
         
-        <div>
-          <Label className="text-base mb-2 block">Number of Opponents</Label>
-          <RadioGroup 
-            value={opponents.toString()} 
-            onValueChange={(value) => setOpponents(parseInt(value))}
-            className="flex space-x-4"
+        <div className="mt-8 flex justify-center gap-4">
+          <Button
+            size="lg"
+            onClick={handleStartGame}
           >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="1" id="opp1" />
-              <Label htmlFor="opp1">1</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="2" id="opp2" />
-              <Label htmlFor="opp2">2</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="3" id="opp3" />
-              <Label htmlFor="opp3">3</Label>
-            </div>
-          </RadioGroup>
-        </div>
-      </div>
-      
-      <div className="pt-6 space-y-3">
-        <Button 
-          className="w-full" 
-          size="lg"
-          onClick={handleStartGame}
-        >
-          Start Game
-        </Button>
-        <Button 
-          className="w-full" 
-          variant="outline"
-          onClick={() => {
-            setMenuState('main');
-            playHit();
-          }}
-        >
-          Back
-        </Button>
-      </div>
-    </div>
-  );
-  
-  // Options screen
-  const OptionsScreen = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold">Options</h2>
-      </div>
-      
-      <div className="space-y-4">
-        <div>
-          <Button 
-            className="w-full"
-            variant={isMuted ? "outline" : "default"}
-            onClick={toggleMute}
+            Start Game
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              toggleMuteMusic();
+              playSound('button_click');
+            }}
           >
-            {isMuted ? 'Unmute Sound' : 'Mute Sound'}
+            {muteMusic ? 'Enable Music' : 'Disable Music'}
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              toggleMuteSfx();
+              if (!muteSfx) playSound('button_click');
+            }}
+          >
+            {muteSfx ? 'Enable Sound' : 'Disable Sound'}
           </Button>
         </div>
       </div>
+    );
+  }
+  
+  // Pause menu (during game)
+  if (gamePaused && !gameOver) {
+    return (
+      <div className="bg-black/80 rounded-lg p-8 max-w-md w-full">
+        <h2 className="text-2xl font-bold text-center mb-6 text-white">
+          Game Paused
+        </h2>
+        
+        <div className="flex flex-col gap-4">
+          <Button 
+            size="lg"
+            onClick={handleResumeGame}
+          >
+            Resume Game
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              toggleMuteMusic();
+              playSound('button_click');
+            }}
+          >
+            {muteMusic ? 'Enable Music' : 'Disable Music'}
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              toggleMuteSfx();
+              if (!muteSfx) playSound('button_click');
+            }}
+          >
+            {muteSfx ? 'Enable Sound' : 'Disable Sound'}
+          </Button>
+          
+          <Button
+            variant="destructive"
+            size="lg"
+            onClick={() => {
+              playSound('button_click');
+              setGameStarted(false);
+              setGamePaused(false);
+            }}
+          >
+            Quit to Main Menu
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
+  // Game over screen
+  if (gameOver) {
+    return (
+      <div className="bg-black/80 rounded-lg p-8 max-w-md w-full">
+        <h2 className="text-3xl font-bold text-center mb-6 text-white">
+          Game Over
+        </h2>
+        
+        {winner && (
+          <p className="text-xl text-center mb-8 text-white">
+            {winner === 'player' ? 'Victory!' : 'Defeat!'}
+          </p>
+        )}
+        
+        <div className="flex flex-col gap-4">
+          <Button
+            size="lg"
+            onClick={() => {
+              playSound('button_click');
+              setGameStarted(false);
+              setGamePaused(false);
+            }}
+          >
+            Return to Main Menu
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
+  // Default menu (shouldn't normally be visible)
+  return (
+    <div className="bg-black/80 rounded-lg p-8 max-w-md w-full">
+      <h2 className="text-2xl font-bold text-center mb-6 text-white">
+        Menu
+      </h2>
       
-      <div className="pt-6">
+      <div className="flex flex-col gap-4">
         <Button 
-          className="w-full" 
-          variant="outline"
+          size="lg"
           onClick={() => {
-            setMenuState('main');
-            playHit();
+            playSound('button_click');
+            setActivePanel(null);
           }}
         >
-          Back
+          Close Menu
         </Button>
-      </div>
-    </div>
-  );
-  
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-background to-background/80">
-      <div className="w-full max-w-md bg-card p-6 rounded-lg shadow-lg border">
-        {menuState === 'main' && <MainMenu />}
-        {menuState === 'newGame' && <NewGameScreen />}
-        {menuState === 'options' && <OptionsScreen />}
       </div>
     </div>
   );

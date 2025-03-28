@@ -1,5 +1,5 @@
 /**
- * Resource types and configurations
+ * Resource type definitions for the game
  */
 
 export enum ResourceType {
@@ -9,54 +9,37 @@ export enum ResourceType {
 }
 
 export interface ResourceDefinition {
-  type: ResourceType;
+  id: ResourceType;
   name: string;
   description: string;
-  color: string;
   icon: string;
-  basePerTurn: number;
+  color: string;
+  spriteIndex: number;
 }
 
 export const RESOURCES: Record<ResourceType, ResourceDefinition> = {
   [ResourceType.FOOD]: {
-    type: ResourceType.FOOD,
+    id: ResourceType.FOOD,
     name: 'Food',
-    description: 'Sustains population and allows creation of units',
-    color: '#4CAF50', // Green
-    icon: 'corn',
-    basePerTurn: 1
+    description: 'Used to grow population in cities and sustain your civilization.',
+    icon: '🌽',
+    color: '#6EAA3C',
+    spriteIndex: 0
   },
   [ResourceType.PRODUCTION]: {
-    type: ResourceType.PRODUCTION,
+    id: ResourceType.PRODUCTION,
     name: 'Production',
-    description: 'Used to build structures and create equipment',
-    color: '#FF9800', // Amber
-    icon: 'hammer',
-    basePerTurn: 1
+    description: 'Used to build units, buildings, and wonders.',
+    icon: '⚒️',
+    color: '#CD7F32',
+    spriteIndex: 1
   },
   [ResourceType.FAITH]: {
-    type: ResourceType.FAITH,
+    id: ResourceType.FAITH,
     name: 'Faith',
-    description: 'Spiritual resource for technologies and special abilities',
-    color: '#2196F3', // Blue
-    icon: 'scripture',
-    basePerTurn: 0.5
-  }
-};
-
-// Resource gathering rates per worker
-export const RESOURCE_GATHER_RATES = {
-  [ResourceType.FOOD]: 2,
-  [ResourceType.PRODUCTION]: 1.5,
-  [ResourceType.FAITH]: 1
-};
-
-// Costs for various game actions
-export const COSTS = {
-  BUILD_CITY: {
-    [ResourceType.PRODUCTION]: 30
-  },
-  CLAIM_LAND: {
-    [ResourceType.FAITH]: 10
+    description: 'Used to develop religious beliefs and perform spiritual actions.',
+    icon: '✨',
+    color: '#E6C35C',
+    spriteIndex: 2
   }
 };

@@ -1,51 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { useGameState } from '@/lib/stores/useGameState';
-import GameView from './GameView';
+import React from 'react';
+import { GameView } from './GameView';
+import GameHUD from './GameHUD';
 import GameMenu from './GameMenu';
+import { useGameState } from '../../lib/stores/useGameState';
 
 interface InterfaceProps {
   className?: string;
 }
 
-const Interface: React.FC<InterfaceProps> = ({ className }) => {
-  const { gamePhase, isInitialized } = useGameState();
+export function Interface({ className }: InterfaceProps) {
+  const gameStarted = useGameState(state => state.gameStarted);
+  const gamePaused = useGameState(state => state.gamePaused);
+  const gameOver = useGameState(state => state.gameOver);
+  const selectedEntity = useGameState(state => state.selectedEntity);
+  const activePanel = useGameState(state => state.activePanel);
   
-  // Load audio assets
-  useEffect(() => {
-    // Load audio assets here if needed
-    // These would be connected to the useAudio store
-  }, []);
-  
-  // Render different screens based on game phase
   return (
-    <div className={`w-full h-full ${className || ''}`}>
-      {gamePhase === 'menu' && !isInitialized && (
-        <GameMenu />
+    <div className={`relative w-full h-full overflow-hidden ${className}`}>
+      {/* Game Canvas */}
+      <GameView />
+      
+      {/* Game HUD */}
+      {gameStarted && !gameOver && (
+        <GameHUD />
       )}
       
-      {gamePhase === 'playing' && isInitialized && (
-        <GameView />
+      {/* Menu Overlay */}
+      {(!gameStarted || gamePaused || gameOver || activePanel === 'menu') && (
+        <div className="absolute inset-0 z-50 bg-black/50 flex items-center justify-center">
+          <GameMenu />
+        </div>
       )}
       
-      {gamePhase === 'game_over' && (
-        <div className="w-full h-full flex items-center justify-center bg-background">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-4">Game Over</h1>
-            <p className="mb-6">Your civilization has reached its end.</p>
-            <button 
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
-              onClick={() => {
-                // Navigate back to menu
-                window.location.reload();
-              }}
-            >
-              Return to Menu
-            </button>
-          </div>
+      {/* Entity Info Panel */}
+      {selectedEntity && (
+        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-black/70 rounded-lg shadow-lg z-40 p-4 text-white">
+          <h3 className="text-lg font-semibold mb-2">
+            {selectedEntity.type.charAt(0).toUpperCase() + selectedEntity.type.slice(1)} Selected
+          </h3>
+          <pre className="text-xs overflow-auto max-h-32">
+            {JSON.stringify(selectedEntity.data, null, 2)}
+          </pre>
         </div>
       )}
     </div>
   );
-};
-
-export default Interface;
+}

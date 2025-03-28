@@ -1,5 +1,5 @@
 /**
- * Building types and definitions
+ * Building type definitions for the game
  */
 import { ResourceType } from './resources';
 import { FactionType } from './factions';
@@ -13,23 +13,24 @@ export enum BuildingType {
   BARRACKS = 'barracks',
   MARKETPLACE = 'marketplace',
   LIBRARY = 'library',
-  WALLS = 'walls',
+  GRANARY = 'granary',
+  MONUMENT = 'monument',
   
-  // Nephite Unique Buildings
-  TEMPLE_OF_NEPHI = 'temple_of_nephi',
-  JUDGMENT_SEAT = 'judgment_seat',
+  // Nephite Buildings
+  TEMPLE_COMPLEX = 'temple_complex',
+  COUNCIL_HALL = 'council_hall',
   
-  // Lamanite Unique Buildings
+  // Lamanite Buildings
   WAR_CAMP = 'war_camp',
   HUNTING_GROUNDS = 'hunting_grounds',
   
-  // Jaredite Unique Buildings
+  // Jaredite Buildings
   GREAT_TOWER = 'great_tower',
-  BARGES = 'barges',
+  ASSEMBLY_HALL = 'assembly_hall',
   
-  // Mulekite Unique Buildings
-  MARKETPLACE_OF_ZARAHEMLA = 'marketplace_of_zarahemla',
-  COUNCIL_HALL = 'council_hall'
+  // Mulekite Buildings
+  TRADE_POST = 'trade_post',
+  ARCHIVE = 'archive'
 }
 
 export enum BuildingCategory {
@@ -40,16 +41,16 @@ export enum BuildingCategory {
   WONDER = 'wonder'
 }
 
-export interface BuildingCost {
-  [ResourceType.FOOD]?: number;
-  [ResourceType.PRODUCTION]?: number;
-  [ResourceType.FAITH]?: number;
-}
-
 export interface BuildingEffect {
   resource?: ResourceType;
-  amount: number;
   type: 'flat' | 'percentage';
+  amount: number;
+}
+
+export interface BuildingCost {
+  [ResourceType.PRODUCTION]: number;
+  [ResourceType.FOOD]?: number;
+  [ResourceType.FAITH]?: number;
 }
 
 export interface BuildingDefinition {
@@ -154,61 +155,71 @@ export const BUILDINGS: Record<BuildingType, BuildingDefinition> = {
     category: BuildingCategory.CULTURAL,
     cost: { [ResourceType.PRODUCTION]: 25 },
     effects: [
-      { amount: 25, type: 'percentage' } // 25% faster tech research
+      { amount: 25, type: 'percentage' } // 25% faster research
     ],
     requiredTech: 'writing',
-    description: 'Repository of knowledge that speeds technology research and education.',
+    description: 'Repository of knowledge that accelerates technology research.',
     spriteIndex: 6,
     footprint: { width: 1, height: 1 },
     flavorText: 'For it were not possible that our father, Lehi, could have remembered all these things, to have taught them to his children, except it were for the help of these plates.'
   },
-  [BuildingType.WALLS]: {
-    id: BuildingType.WALLS,
-    name: 'Walls',
-    category: BuildingCategory.MILITARY,
-    cost: { [ResourceType.PRODUCTION]: 35 },
+  [BuildingType.GRANARY]: {
+    id: BuildingType.GRANARY,
+    name: 'Granary',
+    category: BuildingCategory.RESOURCE,
+    cost: { [ResourceType.PRODUCTION]: 20 },
     effects: [
-      { amount: 50, type: 'percentage' } // 50% defense bonus
+      { resource: ResourceType.FOOD, amount: 2, type: 'flat' }
     ],
-    requiredTech: 'masonry',
-    description: 'Defensive fortification that significantly increases city defense.',
+    description: 'Food storage facility that increases the city\'s food production and enables growth.',
     spriteIndex: 7,
-    footprint: { width: 2, height: 2 },
-    flavorText: 'And Moroni caused that they should commence in digging a ditch round about the land, or the city, of Nephihah. And he caused that they should build a breastwork of timbers upon the inner bank of the ditch.'
+    footprint: { width: 1, height: 1 }
+  },
+  [BuildingType.MONUMENT]: {
+    id: BuildingType.MONUMENT,
+    name: 'Monument',
+    category: BuildingCategory.CULTURAL,
+    cost: { [ResourceType.PRODUCTION]: 20, [ResourceType.FAITH]: 5 },
+    effects: [
+      { resource: ResourceType.FAITH, amount: 2, type: 'flat' }
+    ],
+    description: 'Cultural monument that boosts faith and civic development.',
+    spriteIndex: 8,
+    footprint: { width: 1, height: 1 }
   },
   
   // Nephite Unique Buildings
-  [BuildingType.TEMPLE_OF_NEPHI]: {
-    id: BuildingType.TEMPLE_OF_NEPHI,
-    name: 'Temple of Nephi',
+  [BuildingType.TEMPLE_COMPLEX]: {
+    id: BuildingType.TEMPLE_COMPLEX,
+    name: 'Temple Complex',
     category: BuildingCategory.CULTURAL,
-    cost: { [ResourceType.PRODUCTION]: 35, [ResourceType.FAITH]: 20 },
+    cost: { [ResourceType.PRODUCTION]: 35, [ResourceType.FAITH]: 15 },
     effects: [
       { resource: ResourceType.FAITH, amount: 5, type: 'flat' },
-      { amount: 20, type: 'percentage' } // 20% faster tech research
+      { amount: 15, type: 'percentage' } // 15% faster research
     ],
-    requiredTech: 'temple_ordinances',
+    requiredTech: 'priesthood',
     faction: FactionType.NEPHITE,
-    description: 'A sacred Nephite temple that generates significant faith and accelerates learning.',
-    spriteIndex: 8,
-    footprint: { width: 2, height: 2 },
-    flavorText: 'And I, Nephi, did build a temple; and I did construct it after the manner of the temple of Solomon.'
-  },
-  [BuildingType.JUDGMENT_SEAT]: {
-    id: BuildingType.JUDGMENT_SEAT,
-    name: 'Judgment Seat',
-    category: BuildingCategory.INFRASTRUCTURE,
-    cost: { [ResourceType.PRODUCTION]: 30, [ResourceType.FAITH]: 10 },
-    effects: [
-      { resource: ResourceType.FAITH, amount: 2, type: 'flat' },
-      { resource: ResourceType.PRODUCTION, amount: 10, type: 'percentage' }
-    ],
-    requiredTech: 'law_of_moses',
-    faction: FactionType.NEPHITE,
-    description: 'Center of Nephite government that improves city management and stability.',
+    description: 'Advanced Nephite temple that provides significant faith and knowledge benefits.',
     spriteIndex: 9,
+    footprint: { width: 2, height: 2 },
+    flavorText: 'And the people who were in the land northward might dwell in tents, and in houses of cement, and that they might not be destroyed, the Lord did bring Jared and his brother forth even to this land.'
+  },
+  [BuildingType.COUNCIL_HALL]: {
+    id: BuildingType.COUNCIL_HALL,
+    name: 'Council Hall',
+    category: BuildingCategory.INFRASTRUCTURE,
+    cost: { [ResourceType.PRODUCTION]: 30 },
+    effects: [
+      { resource: ResourceType.PRODUCTION, amount: 10, type: 'percentage' },
+      { resource: ResourceType.FAITH, amount: 2, type: 'flat' }
+    ],
+    requiredTech: 'governance',
+    faction: FactionType.NEPHITE,
+    description: 'Nephite center of governance that improves city efficiency and faith.',
+    spriteIndex: 10,
     footprint: { width: 1, height: 1 },
-    flavorText: 'And thus Alma established order in the church in the city of Zarahemla.'
+    flavorText: 'And it came to pass that king Mosiah granted unto Alma that he might establish churches throughout all the land of Zarahemla; and gave him power to ordain priests and teachers over every church.'
   },
   
   // Lamanite Unique Buildings
@@ -218,7 +229,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDefinition> = {
     category: BuildingCategory.MILITARY,
     cost: { [ResourceType.PRODUCTION]: 25 },
     effects: [
-      { amount: 40, type: 'percentage' } // 40% faster unit training
+      { amount: 35, type: 'percentage' } // 35% faster unit training
     ],
     faction: FactionType.LAMANITE,
     description: 'Lamanite military facility that greatly accelerates unit training.',
@@ -256,55 +267,53 @@ export const BUILDINGS: Record<BuildingType, BuildingDefinition> = {
     description: 'Massive Jaredite structure that demonstrates engineering prowess and generates significant resources.',
     spriteIndex: 12,
     footprint: { width: 2, height: 2 },
-    flavorText: 'And they built a great city by the narrow neck of land, by the place where the sea divides the land.'
+    flavorText: 'Which Jaredites were destroyed by the hand of the Lord upon the face of this north country.'
   },
-  [BuildingType.BARGES]: {
-    id: BuildingType.BARGES,
-    name: 'Barges',
-    category: BuildingCategory.INFRASTRUCTURE,
-    cost: { [ResourceType.PRODUCTION]: 35 },
-    effects: [
-      { resource: ResourceType.FOOD, amount: 2, type: 'flat' },
-      { resource: ResourceType.PRODUCTION, amount: 2, type: 'flat' }
-    ],
-    requiredTech: 'shipbuilding',
-    faction: FactionType.JAREDITE,
-    description: 'Jaredite vessels that enable fishing and water-based resource gathering.',
-    spriteIndex: 13,
-    footprint: { width: 1, height: 1 },
-    flavorText: 'And they were built after a manner that they were exceedingly tight, even that they would hold water like unto a dish.'
-  },
-  
-  // Mulekite Unique Buildings
-  [BuildingType.MARKETPLACE_OF_ZARAHEMLA]: {
-    id: BuildingType.MARKETPLACE_OF_ZARAHEMLA,
-    name: 'Marketplace of Zarahemla',
+  [BuildingType.ASSEMBLY_HALL]: {
+    id: BuildingType.ASSEMBLY_HALL,
+    name: 'Assembly Hall',
     category: BuildingCategory.INFRASTRUCTURE,
     cost: { [ResourceType.PRODUCTION]: 30 },
     effects: [
-      { resource: ResourceType.PRODUCTION, amount: 25, type: 'percentage' },
+      { resource: ResourceType.PRODUCTION, amount: 3, type: 'flat' },
+      { amount: 15, type: 'percentage' } // 15% faster growth
+    ],
+    faction: FactionType.JAREDITE,
+    description: 'Jaredite communal structure that enhances city productivity and growth.',
+    spriteIndex: 13,
+    footprint: { width: 1, height: 1 }
+  },
+  
+  // Mulekite Unique Buildings
+  [BuildingType.TRADE_POST]: {
+    id: BuildingType.TRADE_POST,
+    name: 'Trade Post',
+    category: BuildingCategory.INFRASTRUCTURE,
+    cost: { [ResourceType.PRODUCTION]: 25 },
+    effects: [
+      { resource: ResourceType.PRODUCTION, amount: 2, type: 'flat' },
       { resource: ResourceType.FOOD, amount: 2, type: 'flat' }
     ],
-    requiredTech: 'currency',
     faction: FactionType.MULEKITE,
-    description: 'Advanced trading hub that greatly increases resource production and exchange.',
+    description: 'Mulekite trading hub that generates diverse resources from commercial activity.',
     spriteIndex: 14,
     footprint: { width: 1, height: 1 },
-    flavorText: 'And it came to pass that the people of Zarahemla became exceedingly numerous.'
+    flavorText: 'And at the time that Mosiah discovered them, they had become exceedingly numerous.'
   },
-  [BuildingType.COUNCIL_HALL]: {
-    id: BuildingType.COUNCIL_HALL,
-    name: 'Council Hall',
+  [BuildingType.ARCHIVE]: {
+    id: BuildingType.ARCHIVE,
+    name: 'Archive',
     category: BuildingCategory.CULTURAL,
     cost: { [ResourceType.PRODUCTION]: 25, [ResourceType.FAITH]: 10 },
     effects: [
-      { resource: ResourceType.FAITH, amount: 2, type: 'flat' },
-      { amount: 15, type: 'percentage' } // 15% faster tech research
+      { amount: 20, type: 'percentage' }, // 20% faster research
+      { resource: ResourceType.FAITH, amount: 2, type: 'flat' }
     ],
+    requiredTech: 'writing',
     faction: FactionType.MULEKITE,
-    description: 'Mulekite governmental building that facilitates diplomacy and cultural exchange.',
+    description: 'Mulekite knowledge repository that preserves diverse cultural traditions and accelerates technological advances.',
     spriteIndex: 15,
     footprint: { width: 1, height: 1 },
-    flavorText: 'And they united with the Nephites, and were numbered among the Nephites.'
+    flavorText: 'And it came to pass that the people of Zarahemla, and of Mosiah, did unite together; and Mosiah was appointed to be their king.'
   }
 };

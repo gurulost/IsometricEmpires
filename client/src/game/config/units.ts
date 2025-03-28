@@ -1,46 +1,51 @@
 /**
- * Unit types and definitions
+ * Unit type definitions for the game
  */
 import { ResourceType } from './resources';
 import { FactionType } from './factions';
 
 export enum UnitType {
+  // Common Units
   SETTLER = 'settler',
   WORKER = 'worker',
   WARRIOR = 'warrior',
   ARCHER = 'archer',
-  SPEARMAN = 'spearman',
+  SWORDSMAN = 'swordsman',
   CHARIOT = 'chariot',
+  
+  // Nephite Units
+  CAPTAIN = 'captain',
+  RECORD_KEEPER = 'record_keeper',
+  
+  // Lamanite Units
   STRIPLING_WARRIOR = 'stripling_warrior',
-  TITLE_OF_LIBERTY_BEARER = 'title_of_liberty_bearer',
-  LAMANITE_WARRIOR = 'lamanite_warrior',
-  GADIANTON_ROBBER = 'gadianton_robber',
-  JAREDITE_CHAMPION = 'jaredite_champion',
-  DESERET_WARRIOR = 'deseret_warrior',
-  MULEKITE_MERCHANT = 'mulekite_merchant',
-  INTERPRETER = 'interpreter'
+  HUNTER = 'hunter',
+  
+  // Jaredite Units
+  MASTER_BUILDER = 'master_builder',
+  BARGE_CAPTAIN = 'barge_captain',
+  
+  // Mulekite Units
+  MERCHANT = 'merchant',
+  DIPLOMAT = 'diplomat'
 }
 
 export enum UnitCategory {
   CIVILIAN = 'civilian',
   MILITARY = 'military',
+  NAVAL = 'naval',
   SPECIAL = 'special'
 }
 
-export enum UnitAbility {
-  FOUND_CITY = 'found_city',
-  BUILD_IMPROVEMENT = 'build_improvement',
-  HEAL_OTHERS = 'heal_others',
-  STEALTH = 'stealth',
-  CONVERT = 'convert',
-  INSPIRE = 'inspire',
-  TRADE = 'trade',
-  TRANSLATE = 'translate'
+export interface UnitAbility {
+  id: string;
+  name: string;
+  description: string;
 }
 
 export interface UnitCost {
+  [ResourceType.PRODUCTION]: number;
   [ResourceType.FOOD]?: number;
-  [ResourceType.PRODUCTION]?: number;
   [ResourceType.FAITH]?: number;
 }
 
@@ -48,18 +53,17 @@ export interface UnitDefinition {
   id: UnitType;
   name: string;
   category: UnitCategory;
-  cost: UnitCost;
-  movement: number;
   attackStrength: number;
   defenseStrength: number;
-  range: number;
+  movement: number;
   health: number;
+  range: number;
+  cost: UnitCost;
   abilities: UnitAbility[];
   requiredTech?: string;
   faction?: FactionType;
-  spriteIndex: number;
   description: string;
-  flavorText?: string;
+  spriteIndex: number;
 }
 
 export const UNITS: Record<UnitType, UnitDefinition> = {
@@ -68,230 +72,328 @@ export const UNITS: Record<UnitType, UnitDefinition> = {
     id: UnitType.SETTLER,
     name: 'Settler',
     category: UnitCategory.CIVILIAN,
-    cost: { [ResourceType.FOOD]: 40, [ResourceType.PRODUCTION]: 20 },
-    movement: 2,
     attackStrength: 0,
-    defenseStrength: 1,
-    range: 0,
+    defenseStrength: 0.5,
+    movement: 2,
     health: 10,
-    abilities: [UnitAbility.FOUND_CITY],
-    spriteIndex: 0,
-    description: 'Creates a new city when activated on a suitable location.'
+    range: 0,
+    cost: {
+      [ResourceType.PRODUCTION]: 30,
+      [ResourceType.FOOD]: 20
+    },
+    abilities: [
+      {
+        id: 'found_city',
+        name: 'Found City',
+        description: 'Can establish a new city'
+      }
+    ],
+    description: 'Founders of new cities who establish your civilization in new territories.',
+    spriteIndex: 0
   },
   [UnitType.WORKER]: {
     id: UnitType.WORKER,
     name: 'Worker',
     category: UnitCategory.CIVILIAN,
-    cost: { [ResourceType.FOOD]: 20, [ResourceType.PRODUCTION]: 10 },
-    movement: 2,
     attackStrength: 0,
-    defenseStrength: 1,
-    range: 0,
+    defenseStrength: 0.25,
+    movement: 2,
     health: 10,
-    abilities: [UnitAbility.BUILD_IMPROVEMENT],
-    spriteIndex: 1,
-    description: 'Gathers resources and builds improvements on the land.'
+    range: 0,
+    cost: {
+      [ResourceType.PRODUCTION]: 20
+    },
+    abilities: [
+      {
+        id: 'build_improvement',
+        name: 'Build Improvement',
+        description: 'Can construct tile improvements'
+      }
+    ],
+    description: 'Laborers who can construct infrastructure and improve the land around cities.',
+    spriteIndex: 1
   },
   [UnitType.WARRIOR]: {
     id: UnitType.WARRIOR,
     name: 'Warrior',
     category: UnitCategory.MILITARY,
-    cost: { [ResourceType.FOOD]: 15, [ResourceType.PRODUCTION]: 15 },
-    movement: 2,
-    attackStrength: 3,
+    attackStrength: 2,
     defenseStrength: 2,
+    movement: 2,
+    health: 20,
     range: 0,
-    health: 15,
+    cost: {
+      [ResourceType.PRODUCTION]: 15
+    },
     abilities: [],
-    spriteIndex: 2,
-    description: 'Basic melee combat unit for early warfare.'
+    description: 'Basic melee infantry unit, effective at defending and early exploration.',
+    spriteIndex: 2
   },
   [UnitType.ARCHER]: {
     id: UnitType.ARCHER,
     name: 'Archer',
     category: UnitCategory.MILITARY,
-    cost: { [ResourceType.FOOD]: 10, [ResourceType.PRODUCTION]: 20 },
-    movement: 2,
-    attackStrength: 4,
+    attackStrength: 3,
     defenseStrength: 1,
+    movement: 1,
+    health: 15,
     range: 2,
-    health: 12,
-    abilities: [],
+    cost: {
+      [ResourceType.PRODUCTION]: 20
+    },
+    abilities: [
+      {
+        id: 'ranged_attack',
+        name: 'Ranged Attack',
+        description: 'Can attack from a distance'
+      }
+    ],
     requiredTech: 'archery',
-    spriteIndex: 3,
-    description: 'Ranged unit that can attack from a distance.'
+    description: 'Ranged unit that can attack from a distance but is weaker in close combat.',
+    spriteIndex: 3
   },
-  [UnitType.SPEARMAN]: {
-    id: UnitType.SPEARMAN,
-    name: 'Spearman',
+  [UnitType.SWORDSMAN]: {
+    id: UnitType.SWORDSMAN,
+    name: 'Swordsman',
     category: UnitCategory.MILITARY,
-    cost: { [ResourceType.FOOD]: 15, [ResourceType.PRODUCTION]: 20 },
-    movement: 2,
-    attackStrength: 5,
+    attackStrength: 4,
     defenseStrength: 3,
+    movement: 2,
+    health: 25,
     range: 0,
-    health: 20,
+    cost: {
+      [ResourceType.PRODUCTION]: 25
+    },
     abilities: [],
-    requiredTech: 'bronze_working',
-    spriteIndex: 4,
-    description: 'Medium strength melee unit effective against mounted units.'
+    requiredTech: 'metallurgy',
+    description: 'Advanced melee unit with improved attack and defense capabilities.',
+    spriteIndex: 4
   },
   [UnitType.CHARIOT]: {
     id: UnitType.CHARIOT,
     name: 'Chariot',
     category: UnitCategory.MILITARY,
-    cost: { [ResourceType.FOOD]: 20, [ResourceType.PRODUCTION]: 30 },
+    attackStrength: 3,
+    defenseStrength: 1,
     movement: 4,
-    attackStrength: 4,
-    defenseStrength: 2,
+    health: 20,
     range: 0,
-    health: 15,
-    abilities: [],
+    cost: {
+      [ResourceType.PRODUCTION]: 30
+    },
+    abilities: [
+      {
+        id: 'swift_movement',
+        name: 'Swift Movement',
+        description: 'High movement speed'
+      }
+    ],
     requiredTech: 'wheel',
-    spriteIndex: 5,
-    description: 'Fast-moving unit excellent for exploring and quick attacks.'
+    description: 'Fast moving combat unit ideal for patrolling borders and quick strikes.',
+    spriteIndex: 5
   },
-
-  // Nephite Unique Units
+  
+  // Nephite Units
+  [UnitType.CAPTAIN]: {
+    id: UnitType.CAPTAIN,
+    name: 'Captain',
+    category: UnitCategory.MILITARY,
+    attackStrength: 5,
+    defenseStrength: 4,
+    movement: 2,
+    health: 30,
+    range: 0,
+    cost: {
+      [ResourceType.PRODUCTION]: 30,
+      [ResourceType.FAITH]: 5
+    },
+    abilities: [
+      {
+        id: 'leadership',
+        name: 'Leadership',
+        description: 'Adjacent friendly units gain +1 defense'
+      }
+    ],
+    faction: FactionType.NEPHITE,
+    requiredTech: 'leadership',
+    description: 'Elite Nephite military commanders who improve the effectiveness of nearby units.',
+    spriteIndex: 6
+  },
+  [UnitType.RECORD_KEEPER]: {
+    id: UnitType.RECORD_KEEPER,
+    name: 'Record Keeper',
+    category: UnitCategory.CIVILIAN,
+    attackStrength: 0,
+    defenseStrength: 1,
+    movement: 2,
+    health: 15,
+    range: 0,
+    cost: {
+      [ResourceType.PRODUCTION]: 20,
+      [ResourceType.FAITH]: 10
+    },
+    abilities: [
+      {
+        id: 'record_keeping',
+        name: 'Record Keeping',
+        description: 'Generates faith and accelerates research'
+      }
+    ],
+    faction: FactionType.NEPHITE,
+    requiredTech: 'writing',
+    description: 'Scholarly unit that preserves knowledge and history, generating faith and research bonuses.',
+    spriteIndex: 7
+  },
+  
+  // Lamanite Units
   [UnitType.STRIPLING_WARRIOR]: {
     id: UnitType.STRIPLING_WARRIOR,
     name: 'Stripling Warrior',
     category: UnitCategory.MILITARY,
-    cost: { [ResourceType.FOOD]: 15, [ResourceType.PRODUCTION]: 15, [ResourceType.FAITH]: 5 },
-    movement: 2,
-    attackStrength: 4,
-    defenseStrength: 6, // Exceptionally high defense
-    range: 0,
-    health: 25,
-    abilities: [UnitAbility.INSPIRE],
-    requiredTech: 'faith_in_god',
-    faction: FactionType.NEPHITE,
-    spriteIndex: 6,
-    description: 'Elite Nephite unit with exceptional defensive capabilities.',
-    flavorText: '"They were exceedingly valiant for courage, and also for strength and activity; but behold, this was not all—they were men who were true at all times."'
-  },
-  [UnitType.TITLE_OF_LIBERTY_BEARER]: {
-    id: UnitType.TITLE_OF_LIBERTY_BEARER,
-    name: 'Title of Liberty Bearer',
-    category: UnitCategory.SPECIAL,
-    cost: { [ResourceType.FOOD]: 15, [ResourceType.PRODUCTION]: 10, [ResourceType.FAITH]: 15 },
-    movement: 3,
     attackStrength: 3,
-    defenseStrength: 3,
-    range: 0,
-    health: 20,
-    abilities: [UnitAbility.INSPIRE, UnitAbility.CONVERT],
-    requiredTech: 'title_of_liberty',
-    faction: FactionType.NEPHITE,
-    spriteIndex: 7,
-    description: 'Unique unit that boosts nearby friendly units and can convert enemy units.',
-    flavorText: '"In memory of our God, our religion, and freedom, and our peace, our wives, and our children."'
-  },
-
-  // Lamanite Unique Units
-  [UnitType.LAMANITE_WARRIOR]: {
-    id: UnitType.LAMANITE_WARRIOR,
-    name: 'Lamanite Warrior',
-    category: UnitCategory.MILITARY,
-    cost: { [ResourceType.FOOD]: 20, [ResourceType.PRODUCTION]: 10 },
-    movement: 3,
-    attackStrength: 7, // High attack
-    defenseStrength: 2,
-    range: 0,
-    health: 15,
-    abilities: [],
-    faction: FactionType.LAMANITE,
-    spriteIndex: 8,
-    description: 'Powerful offensive unit with higher attack strength and movement.',
-    flavorText: '"Now the Lamanites were more numerous, yea, by more than twice the number of the Nephites."'
-  },
-  [UnitType.GADIANTON_ROBBER]: {
-    id: UnitType.GADIANTON_ROBBER,
-    name: 'Gadianton Robber',
-    category: UnitCategory.SPECIAL,
-    cost: { [ResourceType.FOOD]: 15, [ResourceType.PRODUCTION]: 15 },
-    movement: 3,
-    attackStrength: 5,
-    defenseStrength: 2,
-    range: 1,
-    health: 15,
-    abilities: [UnitAbility.STEALTH],
-    requiredTech: 'secret_combinations',
-    faction: FactionType.LAMANITE,
-    spriteIndex: 9,
-    description: 'Stealthy unit capable of ambush attacks and hiding in terrain.',
-    flavorText: '"And behold, it is they who do murder, and plunder, and steal, and commit whoredoms and all manner of wickedness."'
-  },
-
-  // Jaredite Unique Units
-  [UnitType.JAREDITE_CHAMPION]: {
-    id: UnitType.JAREDITE_CHAMPION,
-    name: 'Jaredite Champion',
-    category: UnitCategory.MILITARY,
-    cost: { [ResourceType.FOOD]: 25, [ResourceType.PRODUCTION]: 25 },
-    movement: 2,
-    attackStrength: 6,
-    defenseStrength: 5,
-    range: 0,
-    health: 30, // High health
-    abilities: [],
-    requiredTech: 'steel_weapons',
-    faction: FactionType.JAREDITE,
-    spriteIndex: 10,
-    description: 'Powerful unit representing the mighty warriors of Jaredite civilization.',
-    flavorText: '"For never had man believed in the Lord as did the brother of Jared."'
-  },
-  [UnitType.DESERET_WARRIOR]: {
-    id: UnitType.DESERET_WARRIOR,
-    name: 'Deseret Warrior',
-    category: UnitCategory.SPECIAL,
-    cost: { [ResourceType.FOOD]: 20, [ResourceType.PRODUCTION]: 20, [ResourceType.FAITH]: 10 },
-    movement: 3,
-    attackStrength: 5,
     defenseStrength: 4,
-    range: 0,
-    health: 20,
-    abilities: [UnitAbility.HEAL_OTHERS],
-    requiredTech: 'deseret',
-    faction: FactionType.JAREDITE,
-    spriteIndex: 11,
-    description: 'Special unit that can heal nearby friendly units.',
-    flavorText: '"Which by interpretation is a honey bee."'
-  },
-
-  // Mulekite Unique Units
-  [UnitType.MULEKITE_MERCHANT]: {
-    id: UnitType.MULEKITE_MERCHANT,
-    name: 'Mulekite Merchant',
-    category: UnitCategory.CIVILIAN,
-    cost: { [ResourceType.FOOD]: 15, [ResourceType.PRODUCTION]: 20 },
-    movement: 3,
-    attackStrength: 0,
-    defenseStrength: 2,
-    range: 0,
-    health: 15,
-    abilities: [UnitAbility.TRADE],
-    requiredTech: 'trading',
-    faction: FactionType.MULEKITE,
-    spriteIndex: 12,
-    description: 'Civilian unit that generates extra resources through trade.',
-    flavorText: '"The people of Zarahemla became exceedingly numerous."'
-  },
-  [UnitType.INTERPRETER]: {
-    id: UnitType.INTERPRETER,
-    name: 'Interpreter',
-    category: UnitCategory.SPECIAL,
-    cost: { [ResourceType.FOOD]: 10, [ResourceType.PRODUCTION]: 15, [ResourceType.FAITH]: 10 },
     movement: 2,
-    attackStrength: 2,
-    defenseStrength: 2,
+    health: 25,
     range: 0,
+    cost: {
+      [ResourceType.PRODUCTION]: 20,
+      [ResourceType.FAITH]: 5
+    },
+    abilities: [
+      {
+        id: 'faith_shield',
+        name: 'Faith Shield',
+        description: 'High survival rate in battles'
+      }
+    ],
+    faction: FactionType.LAMANITE,
+    requiredTech: 'faith',
+    description: 'Exceptionally devoted young warriors with enhanced defense and survival abilities.',
+    spriteIndex: 8
+  },
+  [UnitType.HUNTER]: {
+    id: UnitType.HUNTER,
+    name: 'Hunter',
+    category: UnitCategory.MILITARY,
+    attackStrength: 4,
+    defenseStrength: 1,
+    movement: 3,
+    health: 20,
+    range: 1,
+    cost: {
+      [ResourceType.PRODUCTION]: 20
+    },
+    abilities: [
+      {
+        id: 'wilderness_movement',
+        name: 'Wilderness Stealth',
+        description: 'Faster movement through forests and jungles'
+      }
+    ],
+    faction: FactionType.LAMANITE,
+    description: 'Skilled wilderness tracker with enhanced movement through difficult terrain.',
+    spriteIndex: 9
+  },
+  
+  // Jaredite Units
+  [UnitType.MASTER_BUILDER]: {
+    id: UnitType.MASTER_BUILDER,
+    name: 'Master Builder',
+    category: UnitCategory.CIVILIAN,
+    attackStrength: 0,
+    defenseStrength: 1,
+    movement: 2,
     health: 15,
-    abilities: [UnitAbility.TRANSLATE, UnitAbility.CONVERT],
-    requiredTech: 'language_study',
+    range: 0,
+    cost: {
+      [ResourceType.PRODUCTION]: 25
+    },
+    abilities: [
+      {
+        id: 'rapid_construction',
+        name: 'Rapid Construction',
+        description: 'Builds improvements faster'
+      }
+    ],
+    faction: FactionType.JAREDITE,
+    requiredTech: 'masonry',
+    description: 'Expert engineer who can construct buildings and improvements much faster than regular workers.',
+    spriteIndex: 10
+  },
+  [UnitType.BARGE_CAPTAIN]: {
+    id: UnitType.BARGE_CAPTAIN,
+    name: 'Barge Captain',
+    category: UnitCategory.NAVAL,
+    attackStrength: 2,
+    defenseStrength: 3,
+    movement: 4,
+    health: 25,
+    range: 0,
+    cost: {
+      [ResourceType.PRODUCTION]: 30
+    },
+    abilities: [
+      {
+        id: 'water_crossing',
+        name: 'Water Crossing',
+        description: 'Can move across water and transport units'
+      }
+    ],
+    faction: FactionType.JAREDITE,
+    requiredTech: 'sailing',
+    description: 'Specialized naval unit that can transport other units across water.',
+    spriteIndex: 11
+  },
+  
+  // Mulekite Units
+  [UnitType.MERCHANT]: {
+    id: UnitType.MERCHANT,
+    name: 'Merchant',
+    category: UnitCategory.CIVILIAN,
+    attackStrength: 0,
+    defenseStrength: 1,
+    movement: 3,
+    health: 15,
+    range: 0,
+    cost: {
+      [ResourceType.PRODUCTION]: 20,
+      [ResourceType.FOOD]: 5
+    },
+    abilities: [
+      {
+        id: 'trade_route',
+        name: 'Trade Route',
+        description: 'Establishes trade routes between cities'
+      }
+    ],
     faction: FactionType.MULEKITE,
-    spriteIndex: 13,
-    description: 'Special unit that can decipher ancient texts and convert enemy units.',
-    flavorText: '"King Mosiah caused that he should be taught in his language."'
+    requiredTech: 'currency',
+    description: 'Commercial specialist who can establish trade routes between cities for resource bonuses.',
+    spriteIndex: 12
+  },
+  [UnitType.DIPLOMAT]: {
+    id: UnitType.DIPLOMAT,
+    name: 'Diplomat',
+    category: UnitCategory.CIVILIAN,
+    attackStrength: 0,
+    defenseStrength: 0.5,
+    movement: 3,
+    health: 10,
+    range: 0,
+    cost: {
+      [ResourceType.PRODUCTION]: 15,
+      [ResourceType.FAITH]: 5
+    },
+    abilities: [
+      {
+        id: 'diplomacy',
+        name: 'Diplomacy',
+        description: 'Can negotiate with neutral villages'
+      }
+    ],
+    faction: FactionType.MULEKITE,
+    requiredTech: 'writing',
+    description: 'Diplomatic envoy skilled at negotiating with neutral settlements and villages.',
+    spriteIndex: 13
   }
 };

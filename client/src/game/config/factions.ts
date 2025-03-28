@@ -1,7 +1,6 @@
 /**
- * Faction definitions and unique traits
+ * Faction definitions for the game
  */
-import { ResourceType } from './resources';
 
 export enum FactionType {
   NEPHITE = 'nephite',
@@ -10,174 +9,127 @@ export enum FactionType {
   MULEKITE = 'mulekite'
 }
 
-export enum BonusType {
-  RESOURCE_PRODUCTION = 'resource_production',
-  UNIT_ATTACK = 'unit_attack',
-  UNIT_DEFENSE = 'unit_defense',
-  UNIT_MOVEMENT = 'unit_movement',
-  TECH_DISCOUNT = 'tech_discount',
-  BUILDING_DISCOUNT = 'building_discount',
-  FAITH_BONUS = 'faith_bonus',
-  UNIT_COST_REDUCTION = 'unit_cost_reduction'
-}
-
-interface FactionBonus {
-  type: BonusType;
-  value: number;
-  description: string;
-  affects?: string; // Can be a specific resource, unit, building, etc.
+export interface FactionBonus {
+  type: 'resource' | 'unit' | 'building' | 'tech';
+  target: string;
+  amount: number;
+  operation: 'flat' | 'percentage';
 }
 
 export interface FactionDefinition {
   id: FactionType;
   name: string;
+  leader: string;
+  color: string;
+  backgroundColor: string;
   description: string;
-  color: string; // Hex color
-  leaderName: string;
   bonuses: FactionBonus[];
-  startingResources: Record<ResourceType, number>;
-  startingTech: string[];
+  startingTech?: string[];
   uniqueUnits: string[];
   uniqueBuildings: string[];
-  lore: string;
 }
 
 export const FACTIONS: Record<FactionType, FactionDefinition> = {
   [FactionType.NEPHITE]: {
     id: FactionType.NEPHITE,
     name: 'Nephites',
-    description: 'Civilization focused on faith, knowledge, and defensive capabilities',
-    color: '#3F51B5', // Deep Blue
-    leaderName: 'Captain Moroni',
+    leader: 'Nephi',
+    color: '#0066CC',
+    backgroundColor: '#DDEEFF',
+    description: 'Advanced civilization known for their record-keeping, craftsmanship, and spiritual devotion. The Nephites excel at building infrastructure and researching new technologies.',
     bonuses: [
       {
-        type: BonusType.RESOURCE_PRODUCTION,
-        value: 0.25, // 25% increase
-        description: 'Faith production increased by 25%',
-        affects: ResourceType.FAITH
+        type: 'resource',
+        target: 'faith',
+        amount: 15,
+        operation: 'percentage'
       },
       {
-        type: BonusType.UNIT_DEFENSE,
-        value: 0.2, // 20% increase
-        description: 'All units gain +20% defensive strength',
-      },
-      {
-        type: BonusType.TECH_DISCOUNT,
-        value: 0.15, // 15% discount
-        description: 'All technologies cost 15% less to research',
+        type: 'building',
+        target: 'all',
+        amount: 10,
+        operation: 'percentage'
       }
     ],
-    startingResources: {
-      [ResourceType.FOOD]: 20,
-      [ResourceType.PRODUCTION]: 15,
-      [ResourceType.FAITH]: 15
-    },
     startingTech: ['writing'],
-    uniqueUnits: ['stripling_warrior', 'title_of_liberty_bearer'],
-    uniqueBuildings: ['temple_of_nephi', 'judgment_seat'],
-    lore: 'Descendants of Nephi who maintained records, built cities, and established a righteous society based on the law of Moses and teachings of Christ.'
+    uniqueUnits: ['captain', 'record_keeper'],
+    uniqueBuildings: ['temple_complex', 'council_hall']
   },
   
   [FactionType.LAMANITE]: {
     id: FactionType.LAMANITE,
     name: 'Lamanites',
-    description: 'Powerful warriors with high mobility and offensive strength',
-    color: '#F44336', // Deep Red
-    leaderName: 'Zerahemnah',
+    leader: 'Laman',
+    color: '#CC0000',
+    backgroundColor: '#FFDDDD',
+    description: 'Fierce warriors adept at survival in wilderness. The Lamanites excel at military conquest and have advantages in combat and unit production.',
     bonuses: [
       {
-        type: BonusType.UNIT_ATTACK,
-        value: 0.3, // 30% increase
-        description: 'All units gain +30% attack strength',
+        type: 'unit',
+        target: 'all',
+        amount: 15,
+        operation: 'percentage'
       },
       {
-        type: BonusType.UNIT_MOVEMENT,
-        value: 1, // +1 movement
-        description: 'All units gain +1 movement points',
-      },
-      {
-        type: BonusType.UNIT_COST_REDUCTION,
-        value: 0.2, // 20% discount
-        description: 'All units cost 20% less food to produce',
+        type: 'resource',
+        target: 'food',
+        amount: 10,
+        operation: 'percentage'
       }
     ],
-    startingResources: {
-      [ResourceType.FOOD]: 25,
-      [ResourceType.PRODUCTION]: 15,
-      [ResourceType.FAITH]: 5
-    },
-    startingTech: ['hunting'],
-    uniqueUnits: ['lamanite_warrior', 'gadianton_robber'],
-    uniqueBuildings: ['war_camp', 'hunting_grounds'],
-    lore: 'Fierce warriors who challenged the Nephites throughout their history, with a rich tribal culture and notable periods of both conflict and peaceful coexistence.'
+    uniqueUnits: ['stripling_warrior', 'hunter'],
+    uniqueBuildings: ['hunting_grounds', 'war_camp']
   },
   
   [FactionType.JAREDITE]: {
     id: FactionType.JAREDITE,
     name: 'Jaredites',
-    description: 'Ancient civilization with powerful production capabilities',
-    color: '#4CAF50', // Green
-    leaderName: 'Shule',
+    leader: 'Jared',
+    color: '#009933',
+    backgroundColor: '#DDFFDD',
+    description: 'Ancient civilization with advanced engineering skills. The Jaredites excel at production and construction of massive structures.',
     bonuses: [
       {
-        type: BonusType.RESOURCE_PRODUCTION,
-        value: 0.35, // 35% increase
-        description: 'Production output increased by 35%',
-        affects: ResourceType.PRODUCTION
+        type: 'resource',
+        target: 'production',
+        amount: 20,
+        operation: 'percentage'
       },
       {
-        type: BonusType.BUILDING_DISCOUNT,
-        value: 0.25, // 25% discount
-        description: 'All buildings cost 25% less to construct',
-      },
-      {
-        type: BonusType.UNIT_COST_REDUCTION,
-        value: 0.1, // 10% discount
-        description: 'All units cost 10% less to produce',
+        type: 'building',
+        target: 'wonder',
+        amount: 25,
+        operation: 'percentage'
       }
     ],
-    startingResources: {
-      [ResourceType.FOOD]: 15,
-      [ResourceType.PRODUCTION]: 25,
-      [ResourceType.FAITH]: 10
-    },
-    startingTech: ['metalworking'],
-    uniqueUnits: ['jaredite_champion', 'deseret_warrior'],
-    uniqueBuildings: ['great_tower', 'barges'],
-    lore: 'The earliest civilization in the promised land, brought to the Americas at the time of the Tower of Babel, known for their massive population and technological achievements.'
+    startingTech: ['masonry'],
+    uniqueUnits: ['master_builder', 'barge_captain'],
+    uniqueBuildings: ['great_tower', 'assembly_hall']
   },
   
   [FactionType.MULEKITE]: {
     id: FactionType.MULEKITE,
     name: 'Mulekites',
-    description: 'Adaptable people skilled at diplomacy and commerce',
-    color: '#FFC107', // Amber
-    leaderName: 'Zarahemla',
+    leader: 'Zarahemla',
+    color: '#9933CC',
+    backgroundColor: '#EEDDFF',
+    description: 'Pragmatic traders skilled in commerce and diplomacy. The Mulekites excel at resource diversity and partnerships.',
     bonuses: [
       {
-        type: BonusType.RESOURCE_PRODUCTION,
-        value: 0.2, // 20% increase
-        description: 'All resource production increased by 20%',
+        type: 'resource',
+        target: 'all',
+        amount: 10,
+        operation: 'percentage'
       },
       {
-        type: BonusType.FAITH_BONUS,
-        value: 0.15, // 15% boost
-        description: 'Faith abilities 15% more effective',
-      },
-      {
-        type: BonusType.TECH_DISCOUNT,
-        value: 0.2, // 20% discount
-        description: 'All technologies cost 20% less to research',
+        type: 'tech',
+        target: 'all',
+        amount: 15,
+        operation: 'percentage'
       }
     ],
-    startingResources: {
-      [ResourceType.FOOD]: 20,
-      [ResourceType.PRODUCTION]: 20,
-      [ResourceType.FAITH]: 10
-    },
-    startingTech: ['trading'],
-    uniqueUnits: ['mulekite_merchant', 'interpreter'],
-    uniqueBuildings: ['marketplace_of_zarahemla', 'council_hall'],
-    lore: 'Descendants of Mulek from Jerusalem who established a thriving society in the land of Zarahemla, eventually merging with the Nephites and contributing to a unified civilization.'
+    startingTech: ['currency'],
+    uniqueUnits: ['merchant', 'diplomat'],
+    uniqueBuildings: ['marketplace', 'trade_post']
   }
 };
