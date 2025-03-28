@@ -3,6 +3,22 @@ import { gridToIso, getIsometricDepth } from '../utils/isometric';
 import { generateId } from '@/lib/utils';
 import { eventBus, EVENTS } from '../utils/events';
 
+/**
+ * Interface for tile data used in game scene and map generation
+ */
+export interface TileData {
+  x: number;
+  y: number;
+  terrainType: TerrainType;
+  elevation: number;
+  resourceType?: string;
+  resourceAmount?: number;
+  improvement?: string;
+  ownerId?: string;
+  visible?: boolean;
+  explored?: boolean;
+}
+
 export interface MapTileOptions {
   x: number;
   y: number;
@@ -19,10 +35,10 @@ export interface MapTileOptions {
 /**
  * Represents a single tile on the game map
  */
-export class MapTile {
+export class MapTile extends Phaser.GameObjects.Container {
   id: string;
-  x: number;
-  y: number;
+  gridX: number;
+  gridY: number;
   terrainType: TerrainType;
   elevation: number;
   resourceType?: string;
@@ -33,58 +49,65 @@ export class MapTile {
   explored: boolean;
   
   // Visual properties
-  width: number;
-  height: number;
-  sprite: any; // Will hold the Phaser sprite
-  resourceSprite?: any;
-  improvementSprite?: any;
-  highlightSprite?: any;
+  tileWidth: number;
+  tileHeight: number;
+  sprite!: Phaser.GameObjects.Sprite; // The ! tells TypeScript this will be assigned
+  resourceSprite?: Phaser.GameObjects.Sprite;
+  improvementSprite?: Phaser.GameObjects.Sprite;
+  highlightSprite?: Phaser.GameObjects.Sprite;
   isHighlighted: boolean;
   isSelected: boolean;
   
   /**
    * Create a new map tile
+   * @param scene The Phaser scene
+   * @param data The tile data
    */
-  constructor(options: MapTileOptions) {
+  constructor(scene: Phaser.Scene, data: TileData) {
+    // Calculate isometric position for container
+    const isoPos = gridToIso(data.x, data.y, 64, 32);
+    
+    // Call parent constructor with scene and position
+    super(scene, isoPos.x, isoPos.y);
+    
+    // Add this container to the scene
+    scene.add.existing(this);
+    
+    // Initialize properties
     this.id = generateId('tile');
-    this.x = options.x;
-    this.y = options.y;
-    this.terrainType = options.terrainType;
-    this.elevation = options.elevation;
-    this.resourceType = options.resourceType;
-    this.resourceAmount = options.resourceAmount;
-    this.improvement = options.improvement;
-    this.ownerId = options.ownerId;
-    this.visible = options.visible ?? true;
-    this.explored = options.explored ?? false;
+    this.gridX = data.x;
+    this.gridY = data.y;
+    this.terrainType = data.terrainType;
+    this.elevation = data.elevation;
+    this.resourceType = data.resourceType;
+    this.resourceAmount = data.resourceAmount;
+    this.improvement = data.improvement;
+    this.ownerId = data.ownerId;
+    this.visible = data.visible ?? true;
+    this.explored = data.explored ?? false;
     
     // Default visual properties
-    this.width = 64;  // Default tile width
-    this.height = 32; // Default tile height
+    this.tileWidth = 64;  // Default tile width
+    this.tileHeight = 32; // Default tile height
     this.isHighlighted = false;
     this.isSelected = false;
+    
+    // Initialize the tile visuals
+    this.initialize();
   }
   
   /**
-   * Initialize the tile's visual representation in the scene
-   * @param scene The Phaser scene to add this tile to
-   * @param tileWidth The width of the tile in pixels
-   * @param tileHeight The height of the tile in pixels
+   * Initialize the tile's visual representation
    */
-  initialize(scene: any, tileWidth: number, tileHeight: number): void {
-    this.width = tileWidth;
-    this.height = tileHeight;
-    
-    // Calculate isometric position
-    const position = gridToIso(this.x, this.y, tileWidth, tileHeight);
+  initialize(): void {
+    const scene = this.scene;
     
     // Get terrain config
     const terrainConfig = getTerrainConfig(this.terrainType);
     
     // Create sprite based on terrain type
     this.sprite = scene.add.sprite(
-      position.x, 
-      position.y, 
+      0, 0, // Position at container's center
       'terrain', 
       `${terrainConfig.textureName}.png`
     );
@@ -93,42 +116,47 @@ export class MapTile {
     this.sprite.setOrigin(0.5, 1);
     
     // Set depth based on position in grid (for proper layering)
-    const mapWidth = scene.map?.width || 100;
-    const mapHeight = scene.map?.height || 100;
-    this.sprite.setDepth(getIsometricDepth(this.x, this.y, mapWidth, mapHeight));
+    const mapWidth = 100;
+    const mapHeight = 100;
+    this.sprite.setDepth(getIsometricDepth(this.gridX, this.gridY, mapWidth, mapHeight));
+    
+    // Add sprite to container
+    this.add(this.sprite);
     
     // Add data reference to the sprite for event handling
     this.sprite.setData('tile', this);
     
     // Set up input events
-    this.setupInteractivity(scene);
+    this.setupInteractivity();
     
     // Add resource sprite if this tile has a resource
     if (this.resourceType) {
-      this.addResourceSprite(scene);
+      this.addResourceSprite();
     }
     
     // Add improvement sprite if this tile has an improvement
     if (this.improvement) {
-      this.addImprovementSprite(scene);
+      this.addImprovementSprite();
     }
   }
   
   /**
    * Setup interactivity for this tile
    */
-  private setupInteractivity(scene: any): void {
+  private setupInteractivity(): void {
+    const scene = this.scene;
+    
     // Make sprite interactive
     this.sprite.setInteractive();
     
     // Setup input events
     this.sprite.on('pointerover', () => {
-      this.highlight(scene);
+      this.highlight();
       
       // Dispatch hover event
       eventBus.emit(EVENTS.TILE_SELECTED, {
         tileId: this.id,
-        position: { x: this.x, y: this.y },
+        position: { x: this.gridX, y: this.gridY },
         terrainType: this.terrainType,
         resourceType: this.resourceType,
         resourceAmount: this.resourceAmount,
@@ -142,12 +170,12 @@ export class MapTile {
     });
     
     this.sprite.on('pointerdown', () => {
-      this.select(scene);
+      this.select();
       
       // Dispatch selection event
       eventBus.emit(EVENTS.TILE_SELECTED, {
         tileId: this.id,
-        position: { x: this.x, y: this.y },
+        position: { x: this.gridX, y: this.gridY },
         terrainType: this.terrainType,
         resourceType: this.resourceType,
         resourceAmount: this.resourceAmount,
@@ -160,18 +188,16 @@ export class MapTile {
   /**
    * Highlight this tile (on hover)
    */
-  highlight(scene: any): void {
+  highlight(): void {
     if (this.isHighlighted) return;
     
     this.isHighlighted = true;
     
     // Create highlight effect
     if (!this.highlightSprite) {
-      const position = gridToIso(this.x, this.y, this.width, this.height);
-      
-      this.highlightSprite = scene.add.sprite(
-        position.x,
-        position.y,
+      // Use local coordinates for container children
+      this.highlightSprite = this.scene.add.sprite(
+        0, 0, // Position at container's center
         'effects',
         'highlight.png'
       );
@@ -179,10 +205,12 @@ export class MapTile {
       this.highlightSprite.setOrigin(0.5, 1);
       this.highlightSprite.setDepth(this.sprite.depth - 0.1);
       this.highlightSprite.setAlpha(0.5);
-      this.highlightSprite.setVisible(true);
-    } else {
-      this.highlightSprite.setVisible(true);
+      
+      // Add to this container
+      this.add(this.highlightSprite);
     }
+    
+    this.highlightSprite.setVisible(true);
   }
   
   /**
@@ -201,25 +229,27 @@ export class MapTile {
   /**
    * Select this tile (on click)
    */
-  select(scene: any): void {
+  select(): void {
     // Toggle selection
     this.isSelected = !this.isSelected;
     
     if (this.isSelected) {
       // Create selection effect (different from highlight)
       if (!this.highlightSprite) {
-        const position = gridToIso(this.x, this.y, this.width, this.height);
-        
-        this.highlightSprite = scene.add.sprite(
-          position.x,
-          position.y,
+        this.highlightSprite = this.scene.add.sprite(
+          0, 0, // Position at container's center
           'effects',
           'selection.png'
         );
         
         this.highlightSprite.setOrigin(0.5, 1);
-        this.highlightSprite.setDepth(this.sprite.depth - 0.1);
+        if (this.sprite) {
+          this.highlightSprite.setDepth(this.sprite.depth - 0.1);
+        }
         this.highlightSprite.setAlpha(0.7);
+        
+        // Add to this container
+        this.add(this.highlightSprite);
       } else {
         this.highlightSprite.setTexture('effects', 'selection.png');
         this.highlightSprite.setAlpha(0.7);
@@ -241,48 +271,52 @@ export class MapTile {
   /**
    * Add a resource sprite to this tile
    */
-  private addResourceSprite(scene: any): void {
+  private addResourceSprite(): void {
     if (!this.resourceType) return;
     
-    const position = gridToIso(this.x, this.y, this.width, this.height);
-    
     // Create resource sprite
-    this.resourceSprite = scene.add.sprite(
-      position.x,
-      position.y - 8, // Slight offset upward
+    this.resourceSprite = this.scene.add.sprite(
+      0, -8, // Center with slight offset upward
       'resources',
       `${this.resourceType}.png`
     );
     
     this.resourceSprite.setOrigin(0.5, 1);
-    this.resourceSprite.setDepth(this.sprite.depth + 0.1);
+    if (this.sprite) {
+      this.resourceSprite.setDepth(this.sprite.depth + 0.1);
+    }
     this.resourceSprite.setScale(0.7); // Scale down slightly
+    
+    // Add to this container
+    this.add(this.resourceSprite);
   }
   
   /**
    * Add an improvement sprite to this tile
    */
-  private addImprovementSprite(scene: any): void {
+  private addImprovementSprite(): void {
     if (!this.improvement) return;
     
-    const position = gridToIso(this.x, this.y, this.width, this.height);
-    
     // Create improvement sprite
-    this.improvementSprite = scene.add.sprite(
-      position.x,
-      position.y - 5, // Slight offset upward
+    this.improvementSprite = this.scene.add.sprite(
+      0, -5, // Center with slight offset upward
       'improvements',
       `${this.improvement}.png`
     );
     
     this.improvementSprite.setOrigin(0.5, 1);
-    this.improvementSprite.setDepth(this.sprite.depth + 0.2);
+    if (this.sprite) {
+      this.improvementSprite.setDepth(this.sprite.depth + 0.2);
+    }
+    
+    // Add to this container
+    this.add(this.improvementSprite);
   }
   
   /**
    * Add or update an improvement on this tile
    */
-  addImprovement(scene: any, improvementType: string): void {
+  addImprovement(improvementType: string): void {
     this.improvement = improvementType;
     
     // Remove existing improvement sprite if any
@@ -292,12 +326,12 @@ export class MapTile {
     }
     
     // Add the new improvement sprite
-    this.addImprovementSprite(scene);
+    this.addImprovementSprite();
     
     // Emit event
     eventBus.emit(EVENTS.IMPROVEMENT_BUILT, {
       tileId: this.id,
-      position: { x: this.x, y: this.y },
+      position: { x: this.gridX, y: this.gridY },
       improvementType: this.improvement
     });
   }
@@ -305,7 +339,7 @@ export class MapTile {
   /**
    * Remove the improvement from this tile
    */
-  removeImprovement(scene: any): void {
+  removeImprovement(): void {
     if (!this.improvement) return;
     
     const oldImprovement = this.improvement;
@@ -320,7 +354,7 @@ export class MapTile {
     // Emit event
     eventBus.emit(EVENTS.IMPROVEMENT_DESTROYED, {
       tileId: this.id,
-      position: { x: this.x, y: this.y },
+      position: { x: this.gridX, y: this.gridY },
       improvementType: oldImprovement
     });
   }
@@ -344,7 +378,7 @@ export class MapTile {
       // Emit depletion event
       eventBus.emit(EVENTS.RESOURCE_DEPLETED, {
         tileId: this.id,
-        position: { x: this.x, y: this.y },
+        position: { x: this.gridX, y: this.gridY },
         resourceType: this.resourceType
       });
       
@@ -355,7 +389,7 @@ export class MapTile {
     // Emit resource gathered event
     eventBus.emit(EVENTS.RESOURCE_GATHERED, {
       tileId: this.id,
-      position: { x: this.x, y: this.y },
+      position: { x: this.gridX, y: this.gridY },
       resourceType: this.resourceType,
       amount: actualAmount,
       remaining: this.resourceAmount
@@ -524,9 +558,7 @@ export class MapTile {
     if (this.improvementSprite) this.improvementSprite.destroy();
     if (this.highlightSprite) this.highlightSprite.destroy();
     
-    this.sprite = undefined;
-    this.resourceSprite = undefined;
-    this.improvementSprite = undefined;
-    this.highlightSprite = undefined;
+    // Need to call super.destroy() to properly clean up the container
+    super.destroy();
   }
 }

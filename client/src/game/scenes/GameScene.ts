@@ -2,8 +2,14 @@ import * as Phaser from 'phaser';
 import { MapTile, TileData } from '../entities/MapTile';
 import { TerrainType } from '../config/terrain';
 import { FactionType } from '../config/factions';
-import { COMMANDS, dispatchDOMEvent, handleDOMEvent, cleanupDOMEventHandlers } from '../utils/events';
-import { getTilePosition } from '../utils/isometric';
+import { EVENTS, COMMANDS, phaserEvents, dispatchDOMEvent, handleDOMEvent, cleanupDOMEventHandlers } from '../utils/events';
+import { getTilePosition, gridToIsometric } from '../utils/isometric';
+import { generateMap } from '../utils/mapGenerator';
+import { MapManager } from '../managers/MapManager';
+import { UnitManager } from '../managers/UnitManager';
+import { BuildingManager } from '../managers/BuildingManager';
+import { ResourceManager } from '../managers/ResourceManager';
+import { TechManager } from '../managers/TechManager';
 
 // Default map dimensions
 const DEFAULT_MAP_WIDTH = 20;
@@ -60,6 +66,9 @@ export class GameScene extends Phaser.Scene {
     this.mapHeight = DEFAULT_MAP_HEIGHT;
     this.currentPlayerId = '';
     this.seed = Date.now();
+    
+    // Initialize graphics objects
+    this.debugGraphics = new Phaser.GameObjects.Graphics(this);
   }
   
   /**
@@ -177,8 +186,7 @@ export class GameScene extends Phaser.Scene {
     // Clear existing tiles
     this.tiles.clear();
     
-    // Create game objects container for tiles
-    const mapContainer = this.add.container(this.cameras.main.width / 2, this.cameras.main.height / 3);
+    // We're not adding tiles to the map container anymore since tiles are containers themselves
     
     // Create random terrain distribution
     // In a real implementation, we would use a more sophisticated algorithm
@@ -207,10 +215,8 @@ export class GameScene extends Phaser.Scene {
         };
         
         // Create tile object
+        // Create the tile (it's already added to the scene in its constructor)
         const tile = new MapTile(this, tileData);
-        
-        // Add to map container
-        mapContainer.add(tile);
         
         // Store in tiles map for easy lookup
         const tileId = `tile_${x}_${y}`;
@@ -262,13 +268,16 @@ export class GameScene extends Phaser.Scene {
     });
     
     // Key controls
-    this.input.keyboard.on('keydown-G', () => {
-      this.showGrid = !this.showGrid;
-      this.drawDebugGrid();
-      
-      // Notify UI of grid toggle
-      dispatchDOMEvent(COMMANDS.TOGGLE_GRID, { showGrid: this.showGrid });
-    });
+    const keyboard = this.input.keyboard;
+    if (keyboard) {
+      keyboard.on('keydown-G', () => {
+        this.showGrid = !this.showGrid;
+        this.drawDebugGrid();
+        
+        // Notify UI of grid toggle
+        dispatchDOMEvent(COMMANDS.TOGGLE_GRID, { showGrid: this.showGrid });
+      });
+    }
   }
   
   /**
@@ -276,32 +285,32 @@ export class GameScene extends Phaser.Scene {
    */
   private setupEventHandlers(): void {
     // Handle move camera event
-    handleDOMEvent(this, COMMANDS.MOVE_CAMERA, (data) => {
+    handleDOMEvent<{x: number, y: number}>(this, COMMANDS.MOVE_CAMERA, (data) => {
       const { x, y } = data;
       this.cameras.main.pan(x, y, 500, Phaser.Math.Easing.Cubic.Out);
     });
     
     // Handle zoom camera event
-    handleDOMEvent(this, COMMANDS.ZOOM_CAMERA, (data) => {
+    handleDOMEvent<{level: number}>(this, COMMANDS.ZOOM_CAMERA, (data) => {
       const { level } = data;
       this.zoomLevel = Phaser.Math.Clamp(level, 0.5, 2.0);
       this.cameras.main.zoomTo(this.zoomLevel, 500, Phaser.Math.Easing.Cubic.Out);
     });
     
     // Handle center on position event
-    handleDOMEvent(this, COMMANDS.CENTER_ON_POSITION, (data) => {
+    handleDOMEvent<{x: number, y: number}>(this, COMMANDS.CENTER_ON_POSITION, (data) => {
       const { x, y } = data;
       const position = getTilePosition(x, y);
       this.cameras.main.pan(position.x, position.y, 500, Phaser.Math.Easing.Cubic.Out);
     });
     
     // Handle end turn event
-    handleDOMEvent(this, COMMANDS.END_TURN, () => {
+    handleDOMEvent<void>(this, COMMANDS.END_TURN, () => {
       this.endTurn();
     });
     
     // Handle toggle grid event
-    handleDOMEvent(this, COMMANDS.TOGGLE_GRID, (data) => {
+    handleDOMEvent<{showGrid: boolean}>(this, COMMANDS.TOGGLE_GRID, (data) => {
       this.showGrid = data.showGrid;
       this.drawDebugGrid();
     });

@@ -2,7 +2,7 @@
  * Event system for game-wide communication
  */
 
-// Define event names as constants
+// Define event names for internal game communication
 export const EVENTS = {
   // Camera events
   MOVE_CAMERA: 'move-camera',
@@ -49,7 +49,19 @@ export const EVENTS = {
   
   // Technology events
   RESEARCH_TECH: 'research-tech',
-  TECH_RESEARCHED: 'tech-researched'
+  TECH_RESEARCHED: 'tech-researched',
+  
+  // Game lifecycle events
+  GAME_START: 'game-start',
+  GAME_OVER: 'game-over',
+  ASSETS_LOADED: 'assets-loaded',
+  MAP_CREATED: 'map-created',
+  GAME_INITIALIZED: 'game-initialized',
+  
+  // UI events
+  SHOW_MENU: 'show-menu',
+  HIDE_MENU: 'hide-menu',
+  RESOURCES_UPDATED: 'resources-updated'
 };
 
 /**
@@ -68,8 +80,8 @@ class EventBus extends EventTarget {
   /**
    * Emit an event with data
    */
-  emit<T>(eventName: string, data: T): void {
-    const event = new GameEvent(eventName, data);
+  emit(eventName: string, data?: any): void {
+    const event = new GameEvent(eventName, data || {});
     this.dispatchEvent(event);
   }
   
@@ -100,8 +112,44 @@ class EventBus extends EventTarget {
   }
 }
 
-// Create and export a singleton instance
+// Create and export singleton instances
+// eventBus for React component communication
 export const eventBus = new EventBus();
+// phaserEvents for Phaser scene communication
+export const phaserEvents = new EventBus();
+
+// Define command names for DOM events (React to Phaser communication)
+export const COMMANDS = {
+  // Game control commands
+  GAME_INITIALIZED: 'game-initialized',
+  START_GAME: 'start-game',
+  PAUSE_GAME: 'pause-game',
+  RESUME_GAME: 'resume-game',
+  RESTART_GAME: 'restart-game',
+  END_TURN: 'end-turn',
+  
+  // Camera commands
+  MOVE_CAMERA: 'move-camera',
+  ZOOM_CAMERA: 'zoom-camera',
+  CENTER_ON_POSITION: 'center-on-position',
+  
+  // Unit commands
+  SELECT_UNIT: 'select-unit',
+  MOVE_UNIT: 'move-unit',
+  ATTACK_WITH_UNIT: 'attack-with-unit',
+  
+  // Building commands
+  BUILD_IMPROVEMENT: 'build-improvement',
+  FOUND_CITY: 'found-city',
+  
+  // Resource commands
+  GATHER_RESOURCE: 'gather-resource',
+  
+  // UI feedback
+  TOGGLE_GRID: 'toggle-grid',
+  RESOURCES_UPDATED: 'resources-updated',
+  TURN_STARTED: 'turn-started'
+};
 
 // Interface for components that need event handling
 export interface EventHandler {
@@ -140,4 +188,40 @@ export function listenForGameEvent<T>(
   return () => {
     target.removeEventListener(eventName, handler);
   };
+}
+
+// Helper to dispatch DOM events for Phaser-React communication
+export function dispatchDOMEvent<T>(eventName: string, data: T): void {
+  const event = createGameEvent(eventName, data);
+  document.dispatchEvent(event);
+}
+
+// Helper to handle DOM events in Phaser scenes
+export function handleDOMEvent<T>(
+  scene: Phaser.Scene, 
+  eventName: string, 
+  callback: (data: T) => void
+): void {
+  const handler = (event: Event) => {
+    const customEvent = event as CustomEvent<T>;
+    callback(customEvent.detail);
+  };
+  
+  document.addEventListener(eventName, handler);
+  
+  // Store handler reference for cleanup
+  const handlers = scene.registry.get('domEventHandlers') || {};
+  handlers[eventName] = handler;
+  scene.registry.set('domEventHandlers', handlers);
+}
+
+// Helper to clean up DOM event handlers when scene shuts down
+export function cleanupDOMEventHandlers(scene: Phaser.Scene): void {
+  const handlers = scene.registry.get('domEventHandlers');
+  if (handlers) {
+    Object.entries(handlers).forEach(([eventName, handler]) => {
+      document.removeEventListener(eventName, handler as EventListener);
+    });
+    scene.registry.remove('domEventHandlers');
+  }
 }

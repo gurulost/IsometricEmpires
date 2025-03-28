@@ -2,14 +2,32 @@
  * Utility functions for isometric grid calculations
  */
 
+// Default tile dimensions
+const DEFAULT_TILE_WIDTH = 64;
+const DEFAULT_TILE_HEIGHT = 32;
+
 /**
  * Convert grid coordinates to isometric screen coordinates
  */
-export function gridToIso(x: number, y: number, tileWidth: number, tileHeight: number): { x: number, y: number } {
+export function gridToIso(x: number, y: number, tileWidth: number = DEFAULT_TILE_WIDTH, tileHeight: number = DEFAULT_TILE_HEIGHT): { x: number, y: number } {
   return {
     x: (x - y) * (tileWidth / 2),
     y: (x + y) * (tileHeight / 2)
   };
+}
+
+/**
+ * Alias for gridToIso to match the function name in GameScene
+ */
+export function gridToIsometric(x: number, y: number, tileWidth: number = DEFAULT_TILE_WIDTH, tileHeight: number = DEFAULT_TILE_HEIGHT): { x: number, y: number } {
+  return gridToIso(x, y, tileWidth, tileHeight);
+}
+
+/**
+ * Get the screen position of a tile
+ */
+export function getTilePosition(x: number, y: number, tileWidth: number = DEFAULT_TILE_WIDTH, tileHeight: number = DEFAULT_TILE_HEIGHT): { x: number, y: number } {
+  return gridToIso(x, y, tileWidth, tileHeight);
 }
 
 /**

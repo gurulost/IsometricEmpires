@@ -1,0 +1,43 @@
+Now, let's prioritize the next steps to bring this structure to life and build towards the MVP outlined in the plan:
+
+Phase 1: Core Engine Setup & Basic Rendering (Highest Priority Blockers)
+
+These are essential to even see anything rendering and interact with the basic game world.
+
+Acquire/Create Initial Isometric Assets:
+What: You need basic visual assets for Phaser to render. Without these, you can't see the game world.
+Why: The current client/public/ folder lacks isometric sprites. Placeholder 3D assets aren't useful for the Phaser renderer.
+How:
+Find or create simple isometric spritesheets for:
+Terrain: Grass, Forest (tree), Hill, Water tiles (matching dimensions, e.g., 64x32 or 128x64).
+Units: At least a "Worker" and a "Warrior" sprite (idle animation frame is enough for now). Define a consistent style.
+Cities/Buildings: A basic "City Center" sprite.
+Resources: Simple icons/sprites for Food/Production/Faith nodes on the map.
+Place these assets in client/public/assets/sprites/ (create this folder) or similar.
+Update client/src/game/config/ files (like terrain.ts, units.ts) with the correct textureName and spriteIndex or frame names corresponding to these new assets.
+Update the preload function (likely needs to be added to a BootScene.ts) to load these spritesheets.
+Implement Phaser Game Instantiation & Scene Management:
+What: Set up the main Phaser game instance within your React app and create the necessary core scenes.
+Why: Currently, App.tsx seems set up for React Router, but the Phaser game itself needs to be created and managed. The GameScene.ts exists but needs BootScene (for loading) and potentially a MainMenuScene.
+How:
+Create client/src/game/scenes/BootScene.ts: This scene should handle preloading all Phaser assets (spritesheets, audio). Use the loadAssets approach from the previous structure if suitable, ensuring it loads the new isometric assets. On completion, it should start the MainMenuScene or GameScene.
+Create client/src/game/scenes/MainMenuScene.ts: Display game title, "Start Game" button (linking to GameScene), settings, etc. (Can be basic initially).
+Modify client/src/components/game/GameView.tsx:
+Import Phaser and your scenes (BootScene, MainMenuScene, GameScene).
+In a useEffect hook, create the Phaser.Game instance using a config object.
+Phaser Config: Set type: Phaser.AUTO (or Phaser.WEBGL), parent: gameContainerRef.current (ensure the ref is correctly passed), width/height (can be dynamic), transparent: true, and include your scenes: [BootScene, MainMenuScene, GameScene]. Define isometric tile dimensions here if needed globally.
+Implement cleanup: game.destroy(true) in the useEffect return function.
+Ensure GameView.tsx is correctly rendered within your React Router setup in App.tsx.
+Basic GameScene.ts Implementation:
+What: Flesh out the GameScene.ts create method to set up the core game world.
+Why: This scene needs to orchestrate the managers and initial game state rendering.
+How:
+init(data): Receive game settings (map size, players, factions) passed from MainMenuScene or setup UI. Store localPlayerId.
+create():
+Instantiate all managers (MapManager, UnitManager, BuildingManager, ResourceManager, etc.), passing necessary dependencies (like this scene reference). Crucially, use the new MapGenerator.ts within MapManager to create the isometric map data.
+Call mapManager.createMap() to generate and render the isometric tile sprites based on the map data.
+Call resourceManager.initializePlayerResources() for each player.
+Call unitManager/buildingManager.createUnit/createBuilding to place starting entities (City Center, initial Warrior/Worker) for each player at appropriate starting locations. Use isometric coordinates via isometric.ts utils.
+Set up the main camera (this.cameras.main) for panning controls (drag or edge scrolling). Set appropriate world bounds based on the isometric map dimensions.
+Instantiate the Phaser-React event bridge (phaserEvents) and store it in the scene's registry (this.registry.set('phaserEvents', phaserEvents)).
+Set up basic input listeners for tile clicks/hovers.
