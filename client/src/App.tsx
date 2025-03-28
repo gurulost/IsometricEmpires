@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
-import { Router, Route, Switch } from "wouter";
 import { KeyboardControls } from "@react-three/drei";
 import "@fontsource/inter";
 import { useAudio } from "./lib/stores/useAudio";
-import GameView from "./components/game/GameView";
-import GameMenu from "./components/game/GameMenu";
-import FactionSelect from "./components/game/FactionSelect";
-import NotFound from "./pages/not-found";
+import Interface from "./components/game/Interface";
 import { useGameState } from "./lib/stores/useGameState";
 
 // Define control keys for the game
@@ -25,7 +21,6 @@ const keyboardMap = [
 // Main App component
 function App() {
   const [audioInitialized, setAudioInitialized] = useState(false);
-  const { gamePhase, setGamePhase } = useGameState();
   const { setBackgroundMusic, setHitSound, setSuccessSound } = useAudio();
 
   // Load audio assets
@@ -46,28 +41,11 @@ function App() {
     }
   }, [audioInitialized, setBackgroundMusic, setHitSound, setSuccessSound]);
 
-  // Handle phase-specific components
-  const renderGamePhase = () => {
-    switch (gamePhase) {
-      case "menu":
-        return <GameMenu />;
-      case "faction_select":
-        return <FactionSelect />;
-      case "playing":
-        return <GameView />;
-      default:
-        return <NotFound />;
-    }
-  };
-
   return (
     <KeyboardControls map={keyboardMap}>
-      <Router>
-        <Switch>
-          <Route path="/">{renderGamePhase()}</Route>
-          <Route><NotFound /></Route>
-        </Switch>
-      </Router>
+      <div className="w-full h-full bg-background text-foreground overflow-hidden">
+        <Interface />
+      </div>
     </KeyboardControls>
   );
 }

@@ -1,561 +1,440 @@
-/**
- * Main game scene for managing game state, rendering, and logic
- */
 import * as Phaser from 'phaser';
-import { Unit } from '../entities/Unit';
-import { Building } from '../entities/Building';
-import { ResourceManager } from '../managers/ResourceManager';
-import { UnitManager } from '../managers/UnitManager';
-import { BuildingManager } from '../managers/BuildingManager';
-import { TechManager } from '../managers/TechManager';
-import { MapManager } from '../managers/MapManager';
-import { CombatManager } from '../managers/CombatManager';
-import { PathfindingManager } from '../managers/PathfindingManager';
-import { AIManager } from '../managers/AIManager';
 import { phaserEvents, EVENTS, COMMANDS } from '../utils/events';
-import { gridToIsometric, isometricToGrid } from '../utils/isometric';
-import { TerrainType } from '../config/terrain';
-import { ResourceType } from '../config/resources';
+import { TerrainType, TERRAIN_TILES } from '../config/terrain';
 import { FactionType } from '../config/factions';
-import { UnitType } from '../config/units';
-import { BuildingType } from '../config/buildings';
 
 export default class GameScene extends Phaser.Scene {
+  // Map properties
+  private mapSize!: { width: number; height: number };
+  private tileSize = 64; // Size of each tile in pixels
+  private mapLayers: { [key: string]: Phaser.Tilemaps.TilemapLayer } = {};
+  private mapData: number[][] = [];
+  
   // Game state
-  private currentPlayerId: string;
-  private isPlayerTurn: boolean;
-  private selectedEntityId: string | null = null;
-  private placingBuilding: BuildingType | null = null;
+  private currentPlayerId!: string;
+  private currentFaction!: FactionType;
+  private selectedTile: { x: number, y: number } | null = null;
+  private showGrid = true;
+  private isMapCreated = false;
   
-  // Managers
-  private resourceManager: ResourceManager;
-  private unitManager: UnitManager;
-  private buildingManager: BuildingManager;
-  private techManager: TechManager;
-  private mapManager: MapManager;
-  private combatManager: CombatManager;
-  private pathfindingManager: PathfindingManager;
-  private aiManager: AIManager;
+  // Input
+  private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private isPlacingBuilding = false;
+  private buildingToPlace: string | null = null;
   
-  // Display objects
-  private cursorTile: Phaser.GameObjects.Image;
-  private buildingPreview: Phaser.GameObjects.Sprite | null = null;
-  private movementOverlay: Phaser.GameObjects.Graphics;
-  private attackOverlay: Phaser.GameObjects.Graphics;
+  // Game objects
+  private units: Map<string, any> = new Map();
+  private buildings: Map<string, any> = new Map();
+  private highlightGraphics!: Phaser.GameObjects.Graphics;
+  private gridGraphics!: Phaser.GameObjects.Graphics;
   
-  // Camera controls
-  private keys: Phaser.Types.Input.Keyboard.CursorKeys;
-  private cameraSpeed: number = 10;
-
   constructor() {
-    super('GameScene');
+    super({ key: 'GameScene' });
   }
-
-  init(data: any): void {
-    this.currentPlayerId = data.currentPlayerId || '';
-    this.isPlayerTurn = true;
+  
+  init() {
+    // Get initial data from registry
+    this.currentPlayerId = this.registry.get('currentPlayerId') || 'player1';
+    this.currentFaction = this.registry.get('currentFaction') || FactionType.NEPHITE;
+    const mapSeed = this.registry.get('mapSeed') || Math.floor(Math.random() * 100000);
+    const mapSizeType = this.registry.get('mapSize') || 'medium';
     
-    // Initialize managers
-    this.resourceManager = new ResourceManager(this);
-    this.unitManager = new UnitManager(this);
-    this.buildingManager = new BuildingManager(this);
-    this.techManager = new TechManager(this);
-    this.mapManager = new MapManager(this, data.mapSize || 'medium', data.mapSeed || Math.floor(Math.random() * 100000));
-    this.combatManager = new CombatManager(this);
-    this.pathfindingManager = new PathfindingManager(this);
-    this.aiManager = new AIManager(this);
+    // Set map size based on selected size
+    this.mapSize = this.getMapSizeFromType(mapSizeType);
     
-    // Subscribe to events
-    this.setupEventListeners();
+    // Initialize map data array
+    this.initializeMapData(mapSeed);
+    
+    // Set up keyboard input
+    this.cursorKeys = this.input.keyboard!.createCursorKeys();
   }
-
-  preload(): void {
-    // Load sprite atlas
-    this.load.spritesheet('tiles', 'assets/tiles.svg', { frameWidth: 64, frameHeight: 32 });
-    this.load.spritesheet('units', 'assets/units.svg', { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet('buildings', 'assets/buildings.svg', { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet('ui', 'assets/ui.svg', { frameWidth: 32, frameHeight: 32 });
+  
+  create() {
+    console.log('Creating game scene...');
     
-    // Load textures
-    this.load.image('cursor', 'assets/ui.svg');
+    // Create graphics objects for highlights and grid
+    this.highlightGraphics = this.add.graphics();
+    this.gridGraphics = this.add.graphics();
+    
+    // Create the isometric tilemap
+    this.createMap();
+    
+    // Set up event handlers
+    this.setupEventHandlers();
+    
+    // Create camera controls
+    this.setupCamera();
+    
+    // Signal that the map is created
+    this.isMapCreated = true;
+    phaserEvents.emit(EVENTS.MAP_CREATED);
+    
+    console.log('Game scene created');
   }
-
-  create(): void {
-    // Setup camera and controls
-    this.cameras.main.setBackgroundColor(0x87CEEB); // Sky blue
-    this.keys = this.input.keyboard.createCursorKeys();
+  
+  update() {
+    // Only run after map is created
+    if (!this.isMapCreated) return;
     
-    // Create map
-    this.mapManager.createMap();
+    // Handle keyboard input
+    this.handleKeyboardInput();
     
-    // Create cursor tile for selection
-    this.cursorTile = this.add.image(0, 0, 'ui', 0);
-    this.cursorTile.setAlpha(0.3);
-    this.cursorTile.setVisible(false);
-    
-    // Create movement overlay
-    this.movementOverlay = this.add.graphics();
-    this.attackOverlay = this.add.graphics();
-    
-    // Setup input handlers
-    this.input.on('pointermove', this.onPointerMove, this);
-    this.input.on('pointerdown', this.onPointerDown, this);
-    
-    // Set initial camera position to center of map
-    const mapCenter = this.mapManager.getMapCenter();
-    const centerPos = gridToIsometric(mapCenter.x, mapCenter.y);
-    this.cameras.main.centerOn(centerPos.x, centerPos.y);
-    
-    // Setup test units and buildings (can be removed in production)
-    this.setupInitialEntities();
-    
-    // Emit ready event
-    phaserEvents.emit(EVENTS.MAP_CREATED, {
-      size: this.mapManager.mapSize,
-      center: mapCenter,
-      currentPlayer: this.currentPlayerId
-    });
-  }
-
-  update(time: number, delta: number): void {
-    // Handle camera movement
-    this.handleCameraControls();
-    
-    // Update AI if it's AI turn
-    if (!this.isPlayerTurn) {
-      this.aiManager.update(delta);
+    // Draw grid if enabled
+    if (this.showGrid) {
+      this.drawGrid();
+    } else {
+      this.gridGraphics.clear();
     }
   }
-
-  private setupEventListeners(): void {
-    // Command events
-    phaserEvents.on(COMMANDS.SELECT_TILE, (event) => {
-      this.selectTileAt(event.detail.x, event.detail.y);
-    });
-    
-    phaserEvents.on(COMMANDS.MOVE_UNIT, (event) => {
-      this.moveSelectedUnit(event.detail.x, event.detail.y);
-    });
-    
-    phaserEvents.on(COMMANDS.ATTACK_UNIT, (event) => {
-      this.attackWithSelectedUnit(event.detail.targetId);
-    });
-    
-    phaserEvents.on(COMMANDS.CREATE_UNIT, (event) => {
-      this.createUnit(event.detail.unitType, event.detail.x, event.detail.y, event.detail.playerId);
-    });
-    
-    phaserEvents.on(COMMANDS.START_BUILDING_PLACEMENT, (event) => {
-      this.startBuildingPlacement(event.detail.buildingType);
-    });
-    
-    phaserEvents.on(COMMANDS.CONFIRM_BUILDING_PLACEMENT, (event) => {
-      this.confirmBuildingPlacement();
-    });
-    
-    phaserEvents.on(COMMANDS.CANCEL_BUILDING_PLACEMENT, () => {
-      this.cancelBuildingPlacement();
-    });
-    
-    phaserEvents.on(COMMANDS.END_TURN, () => {
-      this.endTurn();
-    });
-    
-    phaserEvents.on(COMMANDS.MOVE_CAMERA, (event) => {
-      this.moveCamera(event.detail.x, event.detail.y);
-    });
-  }
-
-  private handleCameraControls(): void {
-    const camera = this.cameras.main;
-    
-    // Keyboard camera movement
-    if (this.keys.left.isDown) {
-      camera.scrollX -= this.cameraSpeed;
-    }
-    if (this.keys.right.isDown) {
-      camera.scrollX += this.cameraSpeed;
-    }
-    if (this.keys.up.isDown) {
-      camera.scrollY -= this.cameraSpeed;
-    }
-    if (this.keys.down.isDown) {
-      camera.scrollY += this.cameraSpeed;
+  
+  // --------------------------------------------------------------------------
+  // Map Functions
+  // --------------------------------------------------------------------------
+  
+  private getMapSizeFromType(sizeType: string): { width: number; height: number } {
+    switch (sizeType) {
+      case 'small':
+        return { width: 12, height: 12 };
+      case 'large':
+        return { width: 24, height: 24 };
+      case 'medium':
+      default:
+        return { width: 18, height: 18 };
     }
   }
-
-  private moveCamera(x: number, y: number): void {
-    const camera = this.cameras.main;
-    camera.centerOn(x, y);
-  }
-
-  private onPointerMove(pointer: Phaser.Input.Pointer): void {
-    // Convert screen coordinates to isometric grid coordinates
-    const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-    const tilePos = isometricToGrid(worldPoint.x, worldPoint.y);
+  
+  private initializeMapData(seed: number) {
+    // Create a seeded random number generator
+    const random = new Phaser.Math.RandomDataGenerator([seed]);
     
-    // Update cursor tile position
-    if (this.mapManager.isValidTile(tilePos.x, tilePos.y)) {
-      const isoPos = gridToIsometric(tilePos.x, tilePos.y);
-      this.cursorTile.setPosition(isoPos.x, isoPos.y);
-      this.cursorTile.setVisible(true);
-      
-      // Update building preview if placing
-      if (this.placingBuilding && this.buildingPreview) {
-        this.buildingPreview.setPosition(isoPos.x, isoPos.y);
-        
-        // Check if placement is valid
-        const isValid = this.buildingManager.isValidPlacement(
-          this.placingBuilding, 
-          tilePos.x, 
-          tilePos.y, 
-          this.currentPlayerId
+    // Initialize empty map data
+    this.mapData = Array(this.mapSize.height).fill(0).map(() => 
+      Array(this.mapSize.width).fill(0)
+    );
+    
+    // Fill with basic terrain (simple procedural generation)
+    for (let y = 0; y < this.mapSize.height; y++) {
+      for (let x = 0; x < this.mapSize.width; x++) {
+        // Create more grass near center, more varied terrain near edges
+        const distanceFromCenter = Math.sqrt(
+          Math.pow(x - this.mapSize.width / 2, 2) + 
+          Math.pow(y - this.mapSize.height / 2, 2)
         );
         
-        this.buildingPreview.setTint(isValid ? 0xffffff : 0xff0000);
+        const normalizedDistance = distanceFromCenter / (this.mapSize.width / 2);
+        
+        // Generate terrain based on distance
+        if (normalizedDistance > 0.9) {
+          // Water on the edges
+          this.mapData[y][x] = TerrainType.WATER;
+        } else if (normalizedDistance > 0.8) {
+          // More mountains and hills near the edge
+          const r = random.frac();
+          if (r < 0.3) this.mapData[y][x] = TerrainType.MOUNTAIN;
+          else if (r < 0.6) this.mapData[y][x] = TerrainType.HILL;
+          else this.mapData[y][x] = TerrainType.GRASS;
+        } else if (normalizedDistance > 0.5) {
+          // Hills and forests in middle ring
+          const r = random.frac();
+          if (r < 0.2) this.mapData[y][x] = TerrainType.HILL;
+          else if (r < 0.5) this.mapData[y][x] = TerrainType.FOREST;
+          else this.mapData[y][x] = TerrainType.GRASS;
+        } else {
+          // Mostly grass with some forests in center
+          const r = random.frac();
+          if (r < 0.2) this.mapData[y][x] = TerrainType.FOREST;
+          else if (r < 0.25) this.mapData[y][x] = TerrainType.DESERT;
+          else this.mapData[y][x] = TerrainType.GRASS;
+          
+          // Add some resources in the center region
+          if (r > 0.9) {
+            const resourceType = random.frac();
+            if (resourceType < 0.33) this.mapData[y][x] = TerrainType.RESOURCE_FOOD;
+            else if (resourceType < 0.66) this.mapData[y][x] = TerrainType.RESOURCE_PRODUCTION;
+            else this.mapData[y][x] = TerrainType.RESOURCE_FAITH;
+          }
+        }
       }
-      
-      // Emit tile hover event
-      phaserEvents.emit(EVENTS.TILE_HOVER, {
-        position: { x: tilePos.x, y: tilePos.y },
-        terrainType: this.mapManager.getTileAt(tilePos.x, tilePos.y)?.type
+    }
+  }
+  
+  private createMap() {
+    // Create a map representation
+    const map = this.make.tilemap({
+      tileWidth: this.tileSize,
+      tileHeight: this.tileSize / 2, // For isometric projection
+      width: this.mapSize.width,
+      height: this.mapSize.height
+    });
+    
+    // Create placeholders for tiles
+    // In a full implementation, we would load a proper tileset
+    const tiles = map.addTilesetImage('tiles', null, this.tileSize, this.tileSize / 2);
+    
+    // Create a layer for the terrain
+    this.mapLayers.terrain = map.createBlankLayer('terrain', tiles, 0, 0);
+    
+    // Render the map as colored rectangles (placeholder for actual tiles)
+    for (let y = 0; y < this.mapSize.height; y++) {
+      for (let x = 0; x < this.mapSize.width; x++) {
+        const terrainType = this.mapData[y][x];
+        const terrainConfig = TERRAIN_TILES[terrainType];
+        
+        // Create a rectangle for each tile
+        const tile = this.add.rectangle(
+          (x - y) * (this.tileSize / 2),  // Isometric X
+          (x + y) * (this.tileSize / 4),  // Isometric Y
+          this.tileSize,
+          this.tileSize / 2,
+          this.getTerrainColor(terrainType)
+        );
+        
+        // Make tiles interactive
+        tile.setInteractive();
+        tile.on('pointerdown', () => this.handleTileClick(x, y));
+        tile.on('pointerover', () => this.handleTileHover(x, y));
+        
+        // Store reference to tile in map data
+        const mapTile = this.mapLayers.terrain.getTileAt(x, y, true);
+        mapTile.properties = {
+          x,
+          y,
+          terrainType,
+          gameObject: tile
+        };
+      }
+    }
+    
+    // Center the camera on the map
+    const mapCenterX = (this.mapSize.width - this.mapSize.height) * (this.tileSize / 2) / 2;
+    const mapCenterY = (this.mapSize.width + this.mapSize.height) * (this.tileSize / 4) / 2;
+    
+    this.cameras.main.centerOn(mapCenterX, mapCenterY);
+  }
+  
+  private getTerrainColor(terrainType: TerrainType): number {
+    // Return colors based on terrain type
+    switch (terrainType) {
+      case TerrainType.GRASS:
+        return 0x88AA55; // Light green
+      case TerrainType.FOREST:
+        return 0x228833; // Dark green
+      case TerrainType.HILL:
+        return 0xBBAA88; // Light brown
+      case TerrainType.MOUNTAIN:
+        return 0x777777; // Gray
+      case TerrainType.DESERT:
+        return 0xDDCC88; // Tan
+      case TerrainType.WATER:
+        return 0x3388CC; // Blue
+      case TerrainType.RESOURCE_FOOD:
+        return 0xFFAA33; // Orange
+      case TerrainType.RESOURCE_PRODUCTION:
+        return 0xAA5533; // Brown
+      case TerrainType.RESOURCE_FAITH:
+        return 0xDDBB55; // Gold
+      default:
+        return 0xFFFFFF; // White (default)
+    }
+  }
+  
+  private drawGrid() {
+    // Clear previous grid
+    this.gridGraphics.clear();
+    this.gridGraphics.lineStyle(1, 0xFFFFFF, 0.3);
+    
+    // Draw isometric grid
+    for (let x = 0; x <= this.mapSize.width; x++) {
+      // Draw vertical grid lines (which are diagonal in isometric view)
+      const startX = (x - 0) * (this.tileSize / 2);
+      const startY = (x + 0) * (this.tileSize / 4);
+      const endX = (x - this.mapSize.height) * (this.tileSize / 2);
+      const endY = (x + this.mapSize.height) * (this.tileSize / 4);
+      this.gridGraphics.lineBetween(startX, startY, endX, endY);
+    }
+    
+    for (let y = 0; y <= this.mapSize.height; y++) {
+      // Draw horizontal grid lines (which are diagonal in isometric view)
+      const startX = (this.mapSize.width - y) * (this.tileSize / 2);
+      const startY = (this.mapSize.width + y) * (this.tileSize / 4);
+      const endX = (0 - y) * (this.tileSize / 2);
+      const endY = (0 + y) * (this.tileSize / 4);
+      this.gridGraphics.lineBetween(startX, startY, endX, endY);
+    }
+  }
+  
+  // --------------------------------------------------------------------------
+  // Input Handlers
+  // --------------------------------------------------------------------------
+  
+  private handleTileClick(x: number, y: number) {
+    console.log(`Tile clicked at ${x}, ${y}, terrain: ${TerrainType[this.mapData[y][x]]}`);
+    
+    // Select the tile
+    this.selectTile(x, y);
+    
+    // If building placement is active, try to place a building
+    if (this.isPlacingBuilding && this.buildingToPlace) {
+      this.tryPlaceBuilding(x, y, this.buildingToPlace);
+      return;
+    }
+    
+    // Check if there's a unit or building at this tile and select it
+    const entityId = this.findEntityAtTile(x, y);
+    if (entityId) {
+      phaserEvents.emit(EVENTS.UI_PANEL_CHANGED, {
+        panel: entityId.startsWith('building') ? 'buildings' : 'units'
       });
-    } else {
-      this.cursorTile.setVisible(false);
     }
   }
-
-  private onPointerDown(pointer: Phaser.Input.Pointer): void {
-    // Right click to cancel selection or placement
-    if (pointer.rightButtonDown()) {
-      if (this.placingBuilding) {
-        this.cancelBuildingPlacement();
-      } else if (this.selectedEntityId) {
-        this.clearSelection();
-      }
-      return;
-    }
+  
+  private handleTileHover(x: number, y: number) {
+    // Highlight the tile on hover
+    this.highlightTile(x, y);
     
-    // Convert screen coordinates to isometric grid coordinates
-    const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-    const tilePos = isometricToGrid(worldPoint.x, worldPoint.y);
-    
-    // Ensure the tile is valid
-    if (!this.mapManager.isValidTile(tilePos.x, tilePos.y)) {
-      return;
-    }
-    
-    // Handle building placement mode
-    if (this.placingBuilding) {
-      const isValid = this.buildingManager.isValidPlacement(
-        this.placingBuilding, 
-        tilePos.x, 
-        tilePos.y, 
-        this.currentPlayerId
-      );
-      
-      if (isValid) {
-        this.buildingPreview!.setPosition(worldPoint.x, worldPoint.y);
-        
-        // Emit event for UI to confirm placement
-        phaserEvents.emit(EVENTS.TILE_SELECTED, {
-          position: { x: tilePos.x, y: tilePos.y },
-          action: 'place_building',
-          buildingType: this.placingBuilding
-        });
-      }
-      return;
-    }
-    
-    // Normal tile selection - check for units or buildings first
-    const unit = this.unitManager.getUnitAt(tilePos.x, tilePos.y);
-    const building = this.buildingManager.getBuildingAt(tilePos.x, tilePos.y);
-    
-    if (unit) {
-      // Check if attacking
-      if (this.selectedEntityId && 
-          this.unitManager.getUnitById(this.selectedEntityId) &&
-          unit.playerId !== this.currentPlayerId) {
-        this.attackWithSelectedUnit(unit.id);
-        return;
-      }
-      
-      // Otherwise select the unit
-      this.selectEntity(unit.id);
-      return;
-    }
-    
-    if (building) {
-      this.selectEntity(building.id);
-      return;
-    }
-    
-    // If we have a unit selected, try to move it
-    if (this.selectedEntityId && this.unitManager.getUnitById(this.selectedEntityId)) {
-      this.moveSelectedUnit(tilePos.x, tilePos.y);
-      return;
-    }
-    
-    // Otherwise, just select the tile
-    this.selectTileAt(tilePos.x, tilePos.y);
-  }
-
-  private selectTileAt(x: number, y: number): void {
-    if (!this.mapManager.isValidTile(x, y)) {
-      return;
-    }
-    
-    // Clear previous selection
-    this.clearSelection();
-    
-    // Emit tile selected event
-    phaserEvents.emit(EVENTS.TILE_SELECTED, {
-      position: { x, y },
-      terrainType: this.mapManager.getTileAt(x, y)?.type
-    });
-    
-    // Highlight the tile
-    const isoPos = gridToIsometric(x, y);
-    this.cursorTile.setPosition(isoPos.x, isoPos.y);
-    this.cursorTile.setVisible(true);
-  }
-
-  private selectEntity(entityId: string): void {
-    // Clear previous selection
-    this.clearSelection();
-    
-    // Try as unit first
-    let unit = this.unitManager.getUnitById(entityId);
-    if (unit) {
-      this.selectedEntityId = entityId;
-      unit.select();
-      
-      // Show movement range for current player's units
-      if (unit.playerId === this.currentPlayerId) {
-        this.showMoveRange(unit);
-      }
-      
-      return;
-    }
-    
-    // Try as building
-    let building = this.buildingManager.getBuildingById(entityId);
-    if (building) {
-      this.selectedEntityId = entityId;
-      building.select();
-      return;
-    }
-  }
-
-  private clearSelection(): void {
-    this.movementOverlay.clear();
-    this.attackOverlay.clear();
-    
-    if (this.selectedEntityId) {
-      const unit = this.unitManager.getUnitById(this.selectedEntityId);
-      if (unit) {
-        unit.deselect();
-      }
-      
-      const building = this.buildingManager.getBuildingById(this.selectedEntityId);
-      if (building) {
-        building.deselect();
-      }
-      
-      this.selectedEntityId = null;
-    }
-  }
-
-  private moveSelectedUnit(targetX: number, targetY: number): void {
-    if (!this.selectedEntityId) return;
-    
-    const unit = this.unitManager.getUnitById(this.selectedEntityId);
-    if (!unit) return;
-    
-    // Only current player can move units
-    if (unit.playerId !== this.currentPlayerId) return;
-    
-    // Calculate path
-    const path = this.pathfindingManager.findPath(
-      unit.tileX,
-      unit.tileY,
-      targetX,
-      targetY,
-      unit.movementLeft
-    );
-    
-    if (path && path.length > 0) {
-      unit.moveTo(path);
-      this.movementOverlay.clear();
-    }
-  }
-
-  private attackWithSelectedUnit(targetId: string): void {
-    if (!this.selectedEntityId) return;
-    
-    const attacker = this.unitManager.getUnitById(this.selectedEntityId);
-    const target = this.unitManager.getUnitById(targetId);
-    
-    if (!attacker || !target) return;
-    
-    // Only current player can attack
-    if (attacker.playerId !== this.currentPlayerId) return;
-    
-    // Cannot attack own units
-    if (attacker.playerId === target.playerId) return;
-    
-    // Check range
-    const distance = Math.abs(attacker.tileX - target.tileX) + Math.abs(attacker.tileY - target.tileY);
-    if (distance > attacker.definition.range) return;
-    
-    // Perform attack
-    attacker.attack(target);
-    this.attackOverlay.clear();
-  }
-
-  private createUnit(unitType: UnitType, x: number, y: number, playerId: string): void {
-    this.unitManager.createUnit(unitType, x, y, playerId);
-  }
-
-  private startBuildingPlacement(buildingType: BuildingType): void {
-    // Cancel any existing placement
-    this.cancelBuildingPlacement();
-    
-    // Set placement mode
-    this.placingBuilding = buildingType;
-    
-    // Create preview sprite
-    const buildingDef = this.buildingManager.getBuildingDefinition(buildingType);
-    this.buildingPreview = this.add.sprite(0, 0, 'buildings', buildingDef.spriteIndex);
-    this.buildingPreview.setAlpha(0.6);
-    this.buildingPreview.setOrigin(0.5, 0.75);
-  }
-
-  private confirmBuildingPlacement(): void {
-    if (!this.placingBuilding || !this.buildingPreview) return;
-    
-    // Get cursor position
-    const tilePos = isometricToGrid(this.buildingPreview.x, this.buildingPreview.y);
-    
-    // Check if placement is valid
-    const isValid = this.buildingManager.isValidPlacement(
-      this.placingBuilding, 
-      tilePos.x, 
-      tilePos.y, 
-      this.currentPlayerId
-    );
-    
-    if (isValid) {
-      // Create the building
-      this.buildingManager.createBuilding(
-        this.placingBuilding,
-        tilePos.x,
-        tilePos.y,
-        this.currentPlayerId
-      );
-      
-      // Clear placement mode
-      this.cancelBuildingPlacement();
-    }
-  }
-
-  private cancelBuildingPlacement(): void {
-    if (this.buildingPreview) {
-      this.buildingPreview.destroy();
-      this.buildingPreview = null;
-    }
-    
-    this.placingBuilding = null;
-  }
-
-  private showMoveRange(unit: Unit): void {
-    this.movementOverlay.clear();
-    
-    if (unit.movementLeft <= 0 || unit.hasActed) {
-      return;
-    }
-    
-    // Get tiles within movement range
-    const movementTiles = this.pathfindingManager.getTilesInRange(
-      unit.tileX,
-      unit.tileY,
-      unit.movementLeft
-    );
-    
-    // Draw movement overlay
-    this.movementOverlay.fillStyle(0x00ff00, 0.3);
-    
-    movementTiles.forEach(tile => {
-      const isoPos = gridToIsometric(tile.x, tile.y);
-      this.movementOverlay.fillRect(isoPos.x - 32, isoPos.y - 16, 64, 32);
+    // Emit a hover event for the UI to show tooltip information
+    phaserEvents.emit(EVENTS.TILE_HOVER, {
+      x,
+      y,
+      terrainType: this.mapData[y][x],
+      entityId: this.findEntityAtTile(x, y)
     });
   }
-
-  private endTurn(): void {
-    // Handle end of player turn
-    this.unitManager.endTurn(this.currentPlayerId);
+  
+  private handleKeyboardInput() {
+    // Handle camera movement with arrow keys
+    const cameraSpeed = 10;
+    if (this.cursorKeys.left!.isDown) {
+      this.cameras.main.scrollX -= cameraSpeed;
+    } else if (this.cursorKeys.right!.isDown) {
+      this.cameras.main.scrollX += cameraSpeed;
+    }
     
-    // Clear selection
-    this.clearSelection();
-    
-    // Toggle player turn
-    this.isPlayerTurn = false;
-    
-    // Notify UI
-    phaserEvents.emit(EVENTS.TURN_ENDED, {
-      playerId: this.currentPlayerId
-    });
-    
-    // Start AI turn (in a real game, this would switch to the next player)
-    // For demo, we'll have AI take one turn and then return to the player
-    setTimeout(() => {
-      // Simulate AI turn completion
-      this.aiManager.takeTurn().then(() => {
-        // Return to player turn
-        this.isPlayerTurn = true;
-        this.unitManager.startTurn(this.currentPlayerId);
-        
-        // Update resources per turn
-        this.resourceManager.updateResourcesPerTurn(this.currentPlayerId);
-        
-        // Notify UI
-        phaserEvents.emit(EVENTS.PLAYER_SWITCHED, {
-          playerId: this.currentPlayerId,
-          turn: true
-        });
-      });
-    }, 500);
+    if (this.cursorKeys.up!.isDown) {
+      this.cameras.main.scrollY -= cameraSpeed;
+    } else if (this.cursorKeys.down!.isDown) {
+      this.cameras.main.scrollY += cameraSpeed;
+    }
   }
-
-  private setupInitialEntities(): void {
-    // This is just for testing - would be replaced by proper game initialization
+  
+  // --------------------------------------------------------------------------
+  // Game Logic
+  // --------------------------------------------------------------------------
+  
+  private selectTile(x: number, y: number) {
+    this.selectedTile = { x, y };
     
-    // Add player 1 (Nephite) starting units and buildings
-    const player1Id = this.currentPlayerId;
-    const player1Faction = FactionType.NEPHITE;
+    // Highlight the selected tile
+    this.highlightTile(x, y, 0xFFFFFF, 0.6);
     
-    // Create starting city center
-    const cityX = 5;
-    const cityY = 5;
-    this.buildingManager.createBuilding(BuildingType.CITY_CENTER, cityX, cityY, player1Id, player1Faction, true);
+    // Emit a select event
+    phaserEvents.emit(EVENTS.TILE_SELECTED, { x, y, terrainType: this.mapData[y][x] });
+  }
+  
+  private highlightTile(x: number, y: number, color = 0xFFFFFF, alpha = 0.3) {
+    // Clear previous highlights
+    this.highlightGraphics.clear();
     
-    // Create starting units
-    this.unitManager.createUnit(UnitType.SETTLER, cityX + 1, cityY, player1Id, player1Faction);
-    this.unitManager.createUnit(UnitType.WARRIOR, cityX, cityY + 1, player1Id, player1Faction);
-    this.unitManager.createUnit(UnitType.WORKER, cityX - 1, cityY, player1Id, player1Faction);
+    // Set stroke style
+    this.highlightGraphics.lineStyle(2, color, alpha);
     
-    // Add AI player (Lamanite) starting units and buildings
-    const player2Id = 'ai-player';
-    const player2Faction = FactionType.LAMANITE;
+    // Draw isometric diamond shape to highlight the tile
+    const isoX = (x - y) * (this.tileSize / 2);
+    const isoY = (x + y) * (this.tileSize / 4);
     
-    // Create AI city center (in opposite corner)
-    const aiCityX = this.mapManager.mapWidth - 6;
-    const aiCityY = this.mapManager.mapHeight - 6;
-    this.buildingManager.createBuilding(BuildingType.CITY_CENTER, aiCityX, aiCityY, player2Id, player2Faction, true);
+    // Draw diamond shape for isometric tile
+    this.highlightGraphics.beginPath();
+    this.highlightGraphics.moveTo(isoX, isoY - this.tileSize / 4);                      // Top
+    this.highlightGraphics.lineTo(isoX + this.tileSize / 2, isoY);                       // Right
+    this.highlightGraphics.lineTo(isoX, isoY + this.tileSize / 4);                      // Bottom
+    this.highlightGraphics.lineTo(isoX - this.tileSize / 2, isoY);                       // Left
+    this.highlightGraphics.closePath();
+    this.highlightGraphics.strokePath();
     
-    // Create AI starting units
-    this.unitManager.createUnit(UnitType.WARRIOR, aiCityX + 1, aiCityY, player2Id, player2Faction);
-    this.unitManager.createUnit(UnitType.WARRIOR, aiCityX, aiCityY + 1, player2Id, player2Faction);
-    this.unitManager.createUnit(UnitType.WORKER, aiCityX - 1, aiCityY, player2Id, player2Faction);
+    // Fill the highlight with semi-transparent color
+    this.highlightGraphics.fillStyle(color, alpha * 0.6);
+    this.highlightGraphics.fillPath();
+  }
+  
+  private findEntityAtTile(x: number, y: number): string | null {
+    // This is a placeholder - in a real implementation, you would look through
+    // all units and buildings to find any at this tile
+    return null;
+  }
+  
+  private tryPlaceBuilding(x: number, y: number, buildingType: string) {
+    // Check if the terrain allows building placement
+    const terrainType = this.mapData[y][x];
+    const terrain = TERRAIN_TILES[terrainType];
+    
+    if (!terrain.isWalkable) {
+      console.log(`Cannot place building on ${TerrainType[terrainType]}`);
+      // Emit error feedback
+      return false;
+    }
+    
+    // Check if there's already a building or unit at this location
+    if (this.findEntityAtTile(x, y)) {
+      console.log('Tile already occupied');
+      return false;
+    }
+    
+    // In a full implementation, you would check resources, create the building, etc.
+    console.log(`Building ${buildingType} placed at ${x}, ${y}`);
+    
+    // Reset building placement mode
+    this.isPlacingBuilding = false;
+    this.buildingToPlace = null;
+    
+    return true;
+  }
+  
+  // --------------------------------------------------------------------------
+  // Setup Functions
+  // --------------------------------------------------------------------------
+  
+  private setupCamera() {
+    // Set up camera with zoom controls
+    this.input.on('wheel', (pointer: Phaser.Input.Pointer, gameObjects: any, deltaX: number, deltaY: number) => {
+      if (deltaY > 0) {
+        this.cameras.main.zoom *= 0.9; // Zoom out
+      } else {
+        this.cameras.main.zoom *= 1.1; // Zoom in
+      }
+      
+      // Clamp zoom
+      this.cameras.main.zoom = Phaser.Math.Clamp(this.cameras.main.zoom, 0.5, 2);
+    });
+  }
+  
+  private setupEventHandlers() {
+    // Listen for command events from the UI
+    window.addEventListener(COMMANDS.SELECT_TILE, ((event: CustomEvent) => {
+      const { x, y } = event.detail;
+      this.selectTile(x, y);
+    }) as EventListener);
+    
+    window.addEventListener(COMMANDS.MOVE_CAMERA, ((event: CustomEvent) => {
+      const { x, y } = event.detail;
+      this.cameras.main.centerOn(x, y);
+    }) as EventListener);
+    
+    window.addEventListener(COMMANDS.START_BUILDING_PLACEMENT, ((event: CustomEvent) => {
+      const { buildingType } = event.detail;
+      this.isPlacingBuilding = true;
+      this.buildingToPlace = buildingType;
+    }) as EventListener);
+    
+    window.addEventListener(COMMANDS.CANCEL_BUILDING_PLACEMENT, (() => {
+      this.isPlacingBuilding = false;
+      this.buildingToPlace = null;
+    }) as EventListener);
+    
+    // Listen for toggleGrid event
+    this.registry.events.on('changedata', (parent: any, key: string, value: any) => {
+      if (key === 'showGrid') {
+        this.showGrid = value;
+      }
+    });
   }
 }

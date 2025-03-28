@@ -1,144 +1,245 @@
 import React, { useState, useEffect } from 'react';
-import { phaserEvents, COMMANDS } from '@/game/utils/events';
-import { useKeyboardControls } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, X, Menu, Volume2, VolumeX } from 'lucide-react';
-import Interface from './Interface';
-import ResourceBar from './ResourceBar';
+import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
+import { phaserEvents, EVENTS, COMMANDS } from '@/game/utils/events';
+import ResourceBar from './ResourceBar';
+import UnitPanel from './UnitPanel';
+import BuildingPanel from './BuildingPanel';
+import TechTree from './TechTree';
 
 const GameHUD: React.FC = () => {
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [showMinimap, setShowMinimap] = useState(false);
-  const { toggleMute, isMuted } = useAudio();
+  const { players, currentPlayer, selectedPanel, selectPanel, toggleGrid, 
+    showGrid, advanceTurn, selectEntity, selectedEntityId } = useGameState();
+  const { toggleMute, isMuted, playHit } = useAudio();
   
-  // Get keyboard controls state
-  const up = useKeyboardControls(state => state.up);
-  const down = useKeyboardControls(state => state.down);
-  const left = useKeyboardControls(state => state.left);
-  const right = useKeyboardControls(state => state.right);
-  const endTurn = useKeyboardControls(state => state.endTurn);
-  const info = useKeyboardControls(state => state.info);
-  const grid = useKeyboardControls(state => state.grid);
+  const [selectedUnitData, setSelectedUnitData] = useState<any | null>(null);
+  const [selectedBuildingData, setSelectedBuildingData] = useState<any | null>(null);
+  const [showMenu, setShowMenu] = useState<boolean>(false);
   
-  // Handle keyboard controls effects
+  // Current player data
+  const currentPlayerData = players.find(p => p.id === currentPlayer);
+  
+  // Handle unit selection
   useEffect(() => {
-    // Camera movement
-    const handleCameraMovement = () => {
-      const moveAmount = 20;
-      let dx = 0;
-      let dy = 0;
+    const handleUnitSelected = (event: CustomEvent) => {
+      const unitData = event.detail;
+      setSelectedUnitData(unitData);
+      setSelectedBuildingData(null);
+      selectEntity(unitData.unitId);
+      selectPanel('units');
+      playHit();
+    };
+    
+    // Listen for unit selection event
+    window.addEventListener(EVENTS.UNIT_SELECTED, handleUnitSelected as EventListener);
+    
+    return () => {
+      window.removeEventListener(EVENTS.UNIT_SELECTED, handleUnitSelected as EventListener);
+    };
+  }, [selectPanel, selectEntity, playHit]);
+  
+  // Handle building selection
+  useEffect(() => {
+    const handleBuildingSelected = (event: CustomEvent) => {
+      const buildingData = event.detail;
+      setSelectedBuildingData(buildingData);
+      setSelectedUnitData(null);
+      selectEntity(buildingData.buildingId);
+      selectPanel('buildings');
+      playHit();
+    };
+    
+    // Listen for building selection event
+    window.addEventListener(EVENTS.BUILDING_SELECTED, handleBuildingSelected as EventListener);
+    
+    return () => {
+      window.removeEventListener(EVENTS.BUILDING_SELECTED, handleBuildingSelected as EventListener);
+    };
+  }, [selectPanel, selectEntity, playHit]);
+  
+  // Handle tile selection that doesn't have a unit or building
+  useEffect(() => {
+    const handleTileSelected = (event: CustomEvent) => {
+      const tileData = event.detail;
       
-      if (up) dy -= moveAmount;
-      if (down) dy += moveAmount;
-      if (left) dx -= moveAmount;
-      if (right) dx += moveAmount;
-      
-      if (dx !== 0 || dy !== 0) {
-        // Get camera position from scene
-        const camera = document.querySelector('canvas')?.getBoundingClientRect();
-        if (camera) {
-          const centerX = camera.width / 2 + camera.left;
-          const centerY = camera.height / 2 + camera.top;
-          
-          phaserEvents.emit(COMMANDS.MOVE_CAMERA, {
-            x: centerX + dx,
-            y: centerY + dy
-          });
-        }
+      // If no entity on this tile, clear selections
+      if (!event.detail.entityId) {
+        setSelectedBuildingData(null);
+        setSelectedUnitData(null);
+        selectEntity(null);
+        selectPanel('map');
       }
     };
     
-    // End turn
-    if (endTurn) {
-      phaserEvents.emit(COMMANDS.END_TURN);
-    }
+    // Listen for tile selection event
+    window.addEventListener(EVENTS.TILE_SELECTED, handleTileSelected as EventListener);
     
-    // Toggle grid
-    if (grid) {
-      phaserEvents.emit(COMMANDS.TOGGLE_GRID);
-    }
-    
-    handleCameraMovement();
-  }, [up, down, left, right, endTurn, info, grid]);
+    return () => {
+      window.removeEventListener(EVENTS.TILE_SELECTED, handleTileSelected as EventListener);
+    };
+  }, [selectPanel, selectEntity]);
+  
+  // Handle End Turn button
+  const handleEndTurn = () => {
+    advanceTurn();
+    playHit();
+  };
+  
+  // Handle Grid toggle
+  const handleToggleGrid = () => {
+    toggleGrid();
+  };
   
   return (
-    <div className="absolute inset-0 pointer-events-none">
-      {/* Top bar with game info */}
-      <div className="pointer-events-auto">
-        <div className="fixed top-0 left-0 right-0 z-50 bg-card/60 backdrop-blur-md border-b border-border p-2">
-          <ResourceBar />
+    <>
+      {/* Top bar with resources */}
+      <div className="absolute top-0 left-0 right-0 z-10 p-2 bg-background/80 backdrop-blur-sm border-b">
+        <ResourceBar />
+      </div>
+      
+      {/* Bottom control panel */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 p-3 bg-background/80 backdrop-blur-sm border-t">
+        <div className="flex justify-between items-center">
+          {/* Left section - Current player info */}
+          <div className="flex items-center space-x-2">
+            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: currentPlayerData?.faction === 'nephite' ? '#3F51B5' : 
+                                                                          currentPlayerData?.faction === 'lamanite' ? '#F44336' :
+                                                                          currentPlayerData?.faction === 'jaredite' ? '#4CAF50' : 
+                                                                          '#FFC107' }}></div>
+            <span className="font-semibold">{currentPlayerData?.name || 'Player'}</span>
+            <span className="text-sm text-muted-foreground">Turn {currentPlayerData?.turnsPlayed || 1}</span>
+          </div>
+          
+          {/* Center section - Action buttons */}
+          <div className="flex space-x-2">
+            <Button 
+              size="sm" 
+              variant={selectedPanel === 'units' ? 'default' : 'outline'}
+              onClick={() => selectPanel('units')}
+            >
+              Units
+            </Button>
+            <Button 
+              size="sm" 
+              variant={selectedPanel === 'buildings' ? 'default' : 'outline'}
+              onClick={() => selectPanel('buildings')}
+            >
+              Buildings
+            </Button>
+            <Button 
+              size="sm" 
+              variant={selectedPanel === 'tech' ? 'default' : 'outline'}
+              onClick={() => selectPanel('tech')}
+            >
+              Tech
+            </Button>
+            <Button 
+              size="sm" 
+              variant={selectedPanel === 'map' ? 'default' : 'outline'}
+              onClick={() => selectPanel('map')}
+            >
+              Map
+            </Button>
+          </div>
+          
+          {/* Right section - Game controls */}
+          <div className="flex space-x-2">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={handleToggleGrid}
+            >
+              {showGrid ? 'Hide Grid' : 'Show Grid'}
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={toggleMute}
+            >
+              {isMuted ? 'Unmute' : 'Mute'}
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => setShowMenu(!showMenu)}
+            >
+              Menu
+            </Button>
+            <Button 
+              size="sm" 
+              variant="default"
+              onClick={handleEndTurn}
+            >
+              End Turn
+            </Button>
+          </div>
+        </div>
+        
+        {/* Panel content based on selection */}
+        <div className="mt-2">
+          {selectedPanel === 'units' && selectedUnitData && (
+            <UnitPanel unitData={selectedUnitData} />
+          )}
+          
+          {selectedPanel === 'buildings' && selectedBuildingData && (
+            <BuildingPanel buildingData={selectedBuildingData} />
+          )}
+          
+          {selectedPanel === 'tech' && (
+            <TechTree />
+          )}
+          
+          {selectedPanel === 'map' && (
+            <div className="p-2 text-sm">
+              <h3 className="font-medium">Map Controls</h3>
+              <p className="text-muted-foreground">
+                Use arrow keys to pan the map. Scroll to zoom. Click to select tiles.
+              </p>
+            </div>
+          )}
         </div>
       </div>
       
-      {/* Sidebar toggle */}
-      <div className="pointer-events-auto">
-        <Button
-          variant="outline"
-          size="icon"
-          className="fixed top-16 right-4 z-50 bg-card rounded-full shadow-md"
-          onClick={() => setShowSidebar(!showSidebar)}
-        >
-          {showSidebar ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-        </Button>
-      </div>
-      
-      {/* Sound toggle */}
-      <div className="pointer-events-auto">
-        <Button
-          variant="outline"
-          size="icon"
-          className="fixed top-16 right-16 z-50 bg-card rounded-full shadow-md"
-          onClick={toggleMute}
-        >
-          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-        </Button>
-      </div>
-      
-      {/* Main sidebar */}
-      <div className={`pointer-events-auto fixed top-14 bottom-0 right-0 z-40 w-80 transition-transform duration-300 ${showSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
-        <Interface className="h-full" />
-      </div>
-      
-      {/* Mini-map (placeholder) */}
-      {showMinimap && (
-        <div className="pointer-events-auto fixed bottom-4 left-4 w-48 h-48 bg-card/80 backdrop-blur-sm rounded-lg border border-border p-2 shadow-lg">
-          <div className="relative w-full h-full">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute top-0 right-0 h-5 w-5"
-              onClick={() => setShowMinimap(false)}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-            <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
-              Mini-map (Coming Soon)
+      {/* Game menu overlay */}
+      {showMenu && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-card p-6 rounded-lg shadow-lg border">
+            <h2 className="text-2xl font-bold mb-4">Game Menu</h2>
+            
+            <div className="space-y-3">
+              <Button 
+                className="w-full"
+                onClick={() => setShowMenu(false)}
+              >
+                Return to Game
+              </Button>
+              
+              <Button 
+                className="w-full"
+                variant="outline"
+                onClick={toggleMute}
+              >
+                {isMuted ? 'Unmute Sound' : 'Mute Sound'}
+              </Button>
+              
+              <Button 
+                className="w-full"
+                variant="outline"
+                onClick={() => {
+                  if (confirm('Are you sure you want to exit? Your progress will be lost.')) {
+                    // Return to main menu
+                    location.reload();
+                  }
+                }}
+              >
+                Exit to Main Menu
+              </Button>
             </div>
           </div>
         </div>
       )}
-      
-      {/* Mini-map toggle */}
-      {!showMinimap && (
-        <div className="pointer-events-auto fixed bottom-4 left-4 z-40">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="bg-card/80 backdrop-blur-sm shadow-md"
-            onClick={() => setShowMinimap(true)}
-          >
-            <Menu className="h-4 w-4 mr-2" />
-            Show Map
-          </Button>
-        </div>
-      )}
-      
-      {/* Keyboard controls hint */}
-      <div className="pointer-events-none fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-card/80 backdrop-blur-sm py-1 px-3 rounded-full border border-border text-xs text-muted-foreground">
-        WASD/Arrows: Move Camera • E: End Turn • G: Toggle Grid • I: Info
-      </div>
-    </div>
+    </>
   );
 };
 

@@ -1,137 +1,88 @@
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import React from 'react';
+import { FactionType, FACTIONS } from '@/game/config/factions';
 import { Button } from '@/components/ui/button';
-import { useGameState } from '@/lib/stores/useGameState';
-import { FACTIONS, FactionDefinition, FactionType } from '@/game/config/factions';
+import { useAudio } from '@/lib/stores/useAudio';
 
-const FactionSelect: React.FC = () => {
-  const { createPlayer, setGamePhase } = useGameState();
-  const [selectedFaction, setSelectedFaction] = useState<FactionType | null>(null);
-  const [playerName, setPlayerName] = useState<string>('Player 1');
+interface FactionSelectProps {
+  selectedFaction: FactionType;
+  onSelectFaction: (faction: FactionType) => void;
+}
+
+const FactionSelect: React.FC<FactionSelectProps> = ({ 
+  selectedFaction, 
+  onSelectFaction 
+}) => {
+  const { playHit } = useAudio();
   
-  // Handler for faction selection
   const handleSelectFaction = (faction: FactionType) => {
-    setSelectedFaction(faction);
+    onSelectFaction(faction);
+    playHit();
   };
   
-  // Handler for starting the game
-  const handleStartGame = () => {
-    if (!selectedFaction) return;
-    
-    // Create player with selected faction
-    createPlayer(playerName, selectedFaction, 'human');
-    
-    // Create AI player (always Lamanite for simplicity)
-    createPlayer('AI Opponent', FactionType.LAMANITE, 'ai');
-    
-    // Change game phase to 'playing'
-    setGamePhase('playing');
-  };
-  
-  // Render faction card
-  const renderFactionCard = (faction: FactionDefinition) => {
-    const isSelected = selectedFaction === faction.id;
+  // Render a faction card for each faction
+  const renderFactionCard = (faction: FactionType) => {
+    const factionData = FACTIONS[faction];
+    const isSelected = selectedFaction === faction;
     
     return (
-      <Card 
-        key={faction.id} 
-        className={`cursor-pointer transition-all duration-200 overflow-hidden ${isSelected ? 'ring-2 ring-primary scale-[1.02]' : 'hover:border-primary/50'}`}
-        onClick={() => handleSelectFaction(faction.id)}
+      <div 
+        key={faction}
+        className={`
+          relative border rounded-md p-3 cursor-pointer transition-all
+          ${isSelected 
+            ? 'border-primary ring-2 ring-primary/30' 
+            : 'border-border hover:border-primary/50'
+          }
+        `}
+        onClick={() => handleSelectFaction(faction)}
       >
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xl font-bold">{faction.name}</h3>
-            
-            {/* Faction icon/color */}
-            <div 
-              className="w-6 h-6 rounded-full" 
-              style={{ backgroundColor: faction.color }}
-            />
+        <div className="flex items-center space-x-3">
+          <div 
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+            style={{ backgroundColor: factionData.color }}
+          >
+            {factionData.name.charAt(0)}
           </div>
-          
-          <p className="text-sm text-muted-foreground mb-3">{faction.description}</p>
-          
-          {/* Leader */}
-          <div className="mb-3">
-            <span className="text-sm font-medium">Leader:</span>{' '}
-            <span className="text-sm">{faction.leaderName}</span>
+          <div>
+            <h3 className="font-semibold">{factionData.name}</h3>
+            <p className="text-xs text-muted-foreground">Leader: {factionData.leaderName}</p>
           </div>
-          
-          {/* Bonuses */}
-          <div className="mb-4">
-            <span className="text-sm font-medium">Bonuses:</span>
-            <ul className="mt-1 text-sm space-y-1">
-              {faction.bonuses.map((bonus, index) => (
-                <li key={index} className="text-muted-foreground">• {bonus.description}</li>
+        </div>
+        
+        <p className="text-sm mt-2 line-clamp-2">{factionData.description}</p>
+        
+        {isSelected && (
+          <div className="mt-3 border-t pt-3">
+            <h4 className="text-sm font-medium mb-2">Special Abilities</h4>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              {factionData.bonuses.map((bonus, index) => (
+                <li key={index}>• {bonus.description}</li>
               ))}
             </ul>
-          </div>
-          
-          {/* Unique Units & Buildings */}
-          <div className="text-sm">
-            <div className="mb-1">
-              <span className="font-medium">Unique Units:</span>{' '}
-              <span className="text-muted-foreground">
-                {faction.uniqueUnits.map(unit => unit.split('_').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ')).join(', ')}
-              </span>
-            </div>
-            <div>
-              <span className="font-medium">Unique Buildings:</span>{' '}
-              <span className="text-muted-foreground">
-                {faction.uniqueBuildings.map(building => building.split('_').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ')).join(', ')}
-              </span>
+            
+            <div className="mt-3">
+              <Button 
+                size="sm" 
+                className="w-full"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Could show a modal with more faction details
+                  alert(`${factionData.name}\n\n${factionData.lore}`);
+                }}
+              >
+                View Details
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     );
   };
   
   return (
-    <div className="min-h-screen p-6 flex flex-col">
-      <header className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2">Choose Your Faction</h1>
-        <p className="text-muted-foreground">Select a civilization to lead in the Battles of the Covenant</p>
-      </header>
-      
-      {/* Player name input */}
-      <div className="mb-8 mx-auto w-full max-w-md">
-        <label htmlFor="playerName" className="block text-sm font-medium mb-2">Your Name</label>
-        <input
-          type="text"
-          id="playerName"
-          value={playerName}
-          onChange={(e) => setPlayerName(e.target.value)}
-          className="w-full p-2 rounded border bg-background"
-        />
-      </div>
-      
-      {/* Factions grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {Object.values(FACTIONS).map(faction => renderFactionCard(faction))}
-      </div>
-      
-      {/* Start button */}
-      <div className="mt-auto text-center">
-        <Button 
-          className="w-full max-w-md"
-          size="lg"
-          disabled={!selectedFaction}
-          onClick={handleStartGame}
-        >
-          Start Game
-        </Button>
-        
-        {!selectedFaction && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Please select a faction to continue
-          </p>
-        )}
-      </div>
+    <div className="grid grid-cols-2 gap-3 mt-2">
+      {Object.values(FactionType).map(faction => renderFactionCard(faction))}
     </div>
   );
 };

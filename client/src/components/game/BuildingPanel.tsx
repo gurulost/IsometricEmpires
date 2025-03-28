@@ -1,10 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { phaserEvents, COMMANDS } from '@/game/utils/events';
-import { useGameState } from '@/lib/stores/useGameState';
-import { BuildingType } from '@/game/config/buildings';
 
 interface BuildingPanelProps {
   buildingData: {
@@ -19,180 +16,124 @@ interface BuildingPanelProps {
 }
 
 const BuildingPanel: React.FC<BuildingPanelProps> = ({ buildingData }) => {
-  const { currentPlayer } = useGameState();
-  const isCurrentPlayerBuilding = buildingData.playerId === currentPlayer;
+  // Get building name in a more readable format
+  const getBuildingName = () => {
+    if (!buildingData.buildingType) return 'Unknown Building';
+    
+    // Convert snake_case to Title Case
+    return buildingData.buildingType
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
   
-  // Format building type name for display
-  const formatBuildingName = (buildingType: string): string => {
-    return buildingType.split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-  };
-
-  // Handle building actions
-  const handleProduceUnit = (unitType: string) => {
-    phaserEvents.emit(COMMANDS.CREATE_UNIT, { 
-      unitType, 
-      x: buildingData.position.x, 
-      y: buildingData.position.y, 
-      playerId: currentPlayer 
-    });
-  };
-
-  // Get faction name from player ID
-  const getFactionName = (playerId: string): string => {
-    const faction = playerId === currentPlayer ? 'Current Player' : 'Enemy';
-    return faction;
+  // Get building state display
+  const getBuildingStateDisplay = () => {
+    switch (buildingData.state) {
+      case 'construction':
+        return <span className="text-amber-500">Under Construction</span>;
+      case 'operational':
+        return <span className="text-green-500">Operational</span>;
+      case 'damaged':
+        return <span className="text-orange-500">Damaged</span>;
+      case 'destroyed':
+        return <span className="text-red-500">Destroyed</span>;
+      default:
+        return <span>Unknown</span>;
+    }
   };
   
   return (
-    <div className="bg-card rounded-lg p-4 mb-4">
-      <div className="flex items-start justify-between mb-3">
+    <div className="p-2 border rounded-md bg-card/50">
+      <h3 className="font-semibold text-lg">{getBuildingName()}</h3>
+      
+      <div className="grid grid-cols-2 gap-2 mt-2">
         <div>
-          <h3 className="text-lg font-semibold">{formatBuildingName(buildingData.buildingType)}</h3>
-          <p className="text-sm text-muted-foreground">
-            {getFactionName(buildingData.playerId)} • Position: ({buildingData.position.x}, {buildingData.position.y})
-          </p>
+          <p className="text-sm text-muted-foreground">Status</p>
+          <div>{getBuildingStateDisplay()}</div>
         </div>
-        <Badge variant={isCurrentPlayerBuilding ? "default" : "destructive"}>
-          {isCurrentPlayerBuilding ? "Friendly" : "Enemy"}
-        </Badge>
+        
+        {buildingData.state === 'construction' && buildingData.constructionProgress !== undefined && (
+          <div>
+            <p className="text-sm text-muted-foreground">Construction</p>
+            <div className="flex items-center gap-2">
+              <Progress className="h-2" value={buildingData.constructionProgress} />
+              <span className="text-xs">{Math.round(buildingData.constructionProgress)}%</span>
+            </div>
+          </div>
+        )}
+        
+        {buildingData.state !== 'construction' && buildingData.health !== undefined && (
+          <div>
+            <p className="text-sm text-muted-foreground">Health</p>
+            <div className="flex items-center gap-2">
+              <Progress className="h-2" value={buildingData.health} />
+              <span className="text-xs">{Math.round(buildingData.health)}%</span>
+            </div>
+          </div>
+        )}
       </div>
       
-      {/* Construction progress or health bar */}
-      {buildingData.state === 'construction' && buildingData.constructionProgress !== undefined && (
-        <div className="mb-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm">Construction</span>
-            <span className="text-sm font-medium">{Math.floor(buildingData.constructionProgress)}%</span>
-          </div>
-          <Progress value={buildingData.constructionProgress} className="h-2" />
-        </div>
-      )}
-      
-      {buildingData.state !== 'construction' && buildingData.health !== undefined && (
-        <div className="mb-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm">Health</span>
-            <span className="text-sm font-medium">{buildingData.health}%</span>
-          </div>
-          <Progress 
-            value={buildingData.health} 
-            className={`h-2 ${buildingData.health < 30 ? 'bg-red-900' : ''}`} 
-          />
-        </div>
-      )}
-      
-      {/* Building status */}
-      <div className="mb-4">
-        <Badge 
-          variant={buildingData.state === 'operational' ? "outline" : "secondary"} 
-          className="capitalize mb-2"
+      <div className="mt-4 space-y-2">
+        {/* Building-specific actions */}
+        {buildingData.state === 'operational' && buildingData.buildingType === 'barracks' && (
+          <Button 
+            size="sm" 
+            variant="default"
+            onClick={() => {
+              // Open unit training menu
+              // This would be connected to the actual game logic in a full implementation
+              console.log('Train unit in barracks', buildingData.buildingId);
+            }}
+          >
+            Train Unit
+          </Button>
+        )}
+        
+        {buildingData.state === 'operational' && buildingData.buildingType === 'marketplace' && (
+          <Button 
+            size="sm" 
+            variant="default"
+            onClick={() => {
+              // Open trade menu
+              console.log('Open trade menu', buildingData.buildingId);
+            }}
+          >
+            Trade Resources
+          </Button>
+        )}
+        
+        {buildingData.state === 'damaged' && (
+          <Button 
+            size="sm" 
+            variant="default"
+            onClick={() => {
+              // Repair building
+              console.log('Repair building', buildingData.buildingId);
+            }}
+          >
+            Repair
+          </Button>
+        )}
+        
+        {/* Common actions */}
+        <Button 
+          size="sm" 
+          variant="outline"
+          onClick={() => {
+            // Center camera on building position
+            const event = new CustomEvent(COMMANDS.MOVE_CAMERA, {
+              detail: {
+                x: (buildingData.position.x - buildingData.position.y) * (64 / 2),
+                y: (buildingData.position.x + buildingData.position.y) * (64 / 4)
+              }
+            });
+            window.dispatchEvent(event);
+          }}
         >
-          {buildingData.state}
-        </Badge>
+          Focus
+        </Button>
       </div>
-      
-      {/* Actions for player's operational buildings */}
-      {isCurrentPlayerBuilding && buildingData.state === 'operational' && (
-        <div className="space-y-3">
-          {/* City center allows unit production */}
-          {buildingData.buildingType === BuildingType.CITY_CENTER && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium mb-1">Produce Units</h4>
-              <div className="grid grid-cols-2 gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleProduceUnit('worker')}
-                >
-                  Worker (20 Food)
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleProduceUnit('warrior')}
-                >
-                  Warrior (15 Food, 15 Prod)
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleProduceUnit('settler')}
-                >
-                  Settler (40 Food, 20 Prod)
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {/* Barracks allows military unit production */}
-          {buildingData.buildingType === BuildingType.BARRACKS && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium mb-1">Train Military Units</h4>
-              <div className="grid grid-cols-2 gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleProduceUnit('warrior')}
-                >
-                  Warrior (15 Food, 15 Prod)
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleProduceUnit('archer')}
-                >
-                  Archer (10 Food, 20 Prod)
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleProduceUnit('spearman')}
-                >
-                  Spearman (15 Food, 20 Prod)
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {/* Temple generates faith */}
-          {buildingData.buildingType === BuildingType.TEMPLE && (
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">
-                Generates 3 Faith per turn and enables religious ceremonies.
-              </p>
-            </div>
-          )}
-          
-          {/* Generic building info for other types */}
-          {![BuildingType.CITY_CENTER, BuildingType.BARRACKS, BuildingType.TEMPLE].includes(buildingData.buildingType as BuildingType) && (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                This building provides bonuses to your civilization.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* For buildings under construction */}
-      {isCurrentPlayerBuilding && buildingData.state === 'construction' && (
-        <div>
-          <p className="text-sm text-muted-foreground">
-            This building is under construction and will be completed soon.
-          </p>
-        </div>
-      )}
-      
-      {/* For enemy buildings */}
-      {!isCurrentPlayerBuilding && (
-        <div>
-          <p className="text-sm text-muted-foreground">
-            This building belongs to another civilization. Move military units nearby to attack it.
-          </p>
-        </div>
-      )}
     </div>
   );
 };

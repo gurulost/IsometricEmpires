@@ -1,127 +1,160 @@
 /**
- * Terrain types configuration
+ * Terrain types and properties
  */
 
 export enum TerrainType {
-  GRASS = 'grass',
-  FOREST = 'forest',
-  HILL = 'hill',
-  MOUNTAIN = 'mountain',
-  DESERT = 'desert',
-  WATER = 'water',
-  RESOURCE_FOOD = 'resource_food',
-  RESOURCE_PRODUCTION = 'resource_production',
-  RESOURCE_FAITH = 'resource_faith'
+  // Basic terrain types
+  GRASS = 0,
+  FOREST = 1,
+  HILL = 2,
+  MOUNTAIN = 3,
+  DESERT = 4,
+  WATER = 5,
+  
+  // Resource tiles
+  RESOURCE_FOOD = 10,
+  RESOURCE_PRODUCTION = 11,
+  RESOURCE_FAITH = 12
 }
 
 export interface TerrainTile {
-  type: TerrainType;
   name: string;
   description: string;
-  movementCost: number;
-  defensiveBonus: number;
   isWalkable: boolean;
+  movementCost: number;
+  defenseBonus: number;
+  resources: {
+    food: number;
+    production: number;
+    faith: number;
+  };
   spriteIndex: number;
-  resourceAmount?: number;
-  resourceType?: 'food' | 'production' | 'faith';
 }
 
 export const TERRAIN_TILES: Record<TerrainType, TerrainTile> = {
   [TerrainType.GRASS]: {
-    type: TerrainType.GRASS,
-    name: 'Plains',
-    description: 'Flat, fertile land easy to traverse and cultivate.',
-    movementCost: 1,
-    defensiveBonus: 0,
+    name: 'Grass',
+    description: 'Flat, fertile land good for farming.',
     isWalkable: true,
+    movementCost: 1,
+    defenseBonus: 0,
+    resources: {
+      food: 2,
+      production: 0,
+      faith: 0
+    },
     spriteIndex: 0
   },
+  
   [TerrainType.FOREST]: {
-    type: TerrainType.FOREST,
     name: 'Forest',
-    description: 'Dense trees that provide cover and resources.',
-    movementCost: 2,
-    defensiveBonus: 0.25, // 25% defense bonus
+    description: 'Dense trees provide lumber and shelter.',
     isWalkable: true,
+    movementCost: 2,
+    defenseBonus: 0.25,
+    resources: {
+      food: 1,
+      production: 1,
+      faith: 0
+    },
     spriteIndex: 1
   },
+  
   [TerrainType.HILL]: {
-    type: TerrainType.HILL,
     name: 'Hill',
-    description: 'Elevated terrain that provides strategic advantages.',
-    movementCost: 2,
-    defensiveBonus: 0.5, // 50% defense bonus
+    description: 'Elevated terrain with defensive advantages.',
     isWalkable: true,
+    movementCost: 2,
+    defenseBonus: 0.5,
+    resources: {
+      food: 0,
+      production: 2,
+      faith: 0
+    },
     spriteIndex: 2
   },
+  
   [TerrainType.MOUNTAIN]: {
-    type: TerrainType.MOUNTAIN,
     name: 'Mountain',
-    description: 'Towering peaks impassable to units.',
-    movementCost: Infinity,
-    defensiveBonus: 0,
+    description: 'Impassable peaks that block movement.',
     isWalkable: false,
+    movementCost: 999,
+    defenseBonus: 0.75,
+    resources: {
+      food: 0,
+      production: 0,
+      faith: 0
+    },
     spriteIndex: 3
   },
+  
   [TerrainType.DESERT]: {
-    type: TerrainType.DESERT,
     name: 'Desert',
-    description: 'Arid lands with sparse vegetation.',
-    movementCost: 1.5,
-    defensiveBonus: 0,
+    description: 'Arid land with few resources.',
     isWalkable: true,
+    movementCost: 1,
+    defenseBonus: 0,
+    resources: {
+      food: 0,
+      production: 0,
+      faith: 1
+    },
     spriteIndex: 4
   },
+  
   [TerrainType.WATER]: {
-    type: TerrainType.WATER,
     name: 'Water',
-    description: 'Bodies of water impassable to most units.',
-    movementCost: Infinity,
-    defensiveBonus: 0,
+    description: 'Impassable without naval technology.',
     isWalkable: false,
+    movementCost: 999,
+    defenseBonus: 0,
+    resources: {
+      food: 0,
+      production: 0,
+      faith: 0
+    },
     spriteIndex: 5
   },
+  
   [TerrainType.RESOURCE_FOOD]: {
-    type: TerrainType.RESOURCE_FOOD,
     name: 'Fertile Land',
-    description: 'Bountiful land that produces extra food.',
-    movementCost: 1,
-    defensiveBonus: 0,
+    description: 'Exceptionally fertile land with abundant food.',
     isWalkable: true,
-    spriteIndex: 6,
-    resourceAmount: 3,
-    resourceType: 'food'
+    movementCost: 1,
+    defenseBonus: 0,
+    resources: {
+      food: 4,
+      production: 0,
+      faith: 0
+    },
+    spriteIndex: 10
   },
+  
   [TerrainType.RESOURCE_PRODUCTION]: {
-    type: TerrainType.RESOURCE_PRODUCTION,
     name: 'Ore Deposit',
-    description: 'Rich minerals that can be mined for production.',
-    movementCost: 2,
-    defensiveBonus: 0.25,
+    description: 'Rich mineral deposits for mining.',
     isWalkable: true,
-    spriteIndex: 7,
-    resourceAmount: 3,
-    resourceType: 'production'
-  },
-  [TerrainType.RESOURCE_FAITH]: {
-    type: TerrainType.RESOURCE_FAITH,
-    name: 'Sacred Ground',
-    description: 'Holy site that inspires faith.',
     movementCost: 1,
-    defensiveBonus: 0.1,
+    defenseBonus: 0,
+    resources: {
+      food: 0,
+      production: 4,
+      faith: 0
+    },
+    spriteIndex: 11
+  },
+  
+  [TerrainType.RESOURCE_FAITH]: {
+    name: 'Sacred Site',
+    description: 'A location of spiritual significance.',
     isWalkable: true,
-    spriteIndex: 8,
-    resourceAmount: 2,
-    resourceType: 'faith'
+    movementCost: 1,
+    defenseBonus: 0,
+    resources: {
+      food: 0,
+      production: 0,
+      faith: 4
+    },
+    spriteIndex: 12
   }
-};
-
-// Noise thresholds for map generation
-export const TERRAIN_GENERATION = {
-  WATER_THRESHOLD: 0.3,
-  DESERT_THRESHOLD: 0.6,
-  FOREST_THRESHOLD: 0.5,
-  HILL_THRESHOLD: 0.7,
-  MOUNTAIN_THRESHOLD: 0.85,
-  RESOURCE_THRESHOLD: 0.95
 };
