@@ -2,29 +2,127 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  * {
-    @apply border-border;
-  }
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  /* Light Mode Colors */
+  --color-primary: #3060a8;
+  --color-secondary: #a88030;
+  --color-accent: #608020;
+  --color-danger: #a03030;
+  --color-background: #f0f0f8;
+  --color-card: #ffffff;
+  --color-text: #202030;
+  --color-text-light: #606070;
+  
+  /* Faction Colors */
+  --faction-nephites: #3060a8;
+  --faction-lamanites: #9e3030;
+  --faction-jaredites: #608020;
+  --faction-mulekites: #a88030;
+}
 
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    width: 100vw;
-    height: 100vh;
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode Colors */
+    --color-primary: #4080d0;
+    --color-secondary: #d0a040;
+    --color-accent: #80a030;
+    --color-danger: #d04040;
+    --color-background: #181820;
+    --color-card: #282830;
+    --color-text: #e0e0f0;
+    --color-text-light: #a0a0b0;
   }
 }
 
-#root {
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Game Specific Styles */
+.game-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#game-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  position: fixed;
+  z-index: 10;
 }
 
-canvas {
-  width: 100% !important;
-  height: 100% !important;
-  touch-action: none;
+.game-interface {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.game-interface > * {
+  pointer-events: auto;
+}
+
+.resource-bar {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.action-panel {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Tile Hover Effects */
+.tile-hover {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.tile-selected {
+  outline: 2px solid gold;
+}
+
+/* Units */
+.unit {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s ease;
+}
+
+.unit-nephites {
+  background-color: var(--faction-nephites);
+}
+
+.unit-lamanites {
+  background-color: var(--faction-lamanites);
+}
+
+.unit-jaredites {
+  background-color: var(--faction-jaredites);
+}
+
+.unit-mulekites {
+  background-color: var(--faction-mulekites);
 }

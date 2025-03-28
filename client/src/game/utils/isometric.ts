@@ -1,81 +1,73 @@
 /**
- * Isometric utility functions
+ * Utility functions for isometric grid calculations
  */
-
-// Tile size constants
-export const TILE_WIDTH = 64;
-export const TILE_HEIGHT = 32;
 
 /**
- * Convert grid coordinates to isometric screen position
+ * Convert grid coordinates to isometric screen coordinates
  */
-export function gridToIsometric(x: number, y: number): { x: number, y: number } {
+export function gridToIso(x: number, y: number, tileWidth: number, tileHeight: number): { x: number, y: number } {
   return {
-    x: (x - y) * (TILE_WIDTH / 2),
-    y: (x + y) * (TILE_HEIGHT / 2)
+    x: (x - y) * (tileWidth / 2),
+    y: (x + y) * (tileHeight / 2)
   };
 }
 
 /**
- * Convert isometric screen position to grid coordinates
- * NOTE: This is an approximation and might need adjustment for precise click handling
+ * Convert isometric screen coordinates to grid coordinates
  */
-export function isometricToGrid(x: number, y: number): { x: number, y: number } {
-  // Convert screen coordinates to isometric grid
-  const tileX = Math.round((x / (TILE_WIDTH / 2) + y / (TILE_HEIGHT / 2)) / 2);
-  const tileY = Math.round((y / (TILE_HEIGHT / 2) - x / (TILE_WIDTH / 2)) / 2);
+export function isoToGrid(x: number, y: number, tileWidth: number, tileHeight: number): { x: number, y: number } {
+  // Calculate grid coordinates
+  const gridX = (x / (tileWidth / 2) + y / (tileHeight / 2)) / 2;
+  const gridY = (y / (tileHeight / 2) - x / (tileWidth / 2)) / 2;
   
-  return { x: tileX, y: tileY };
+  // Round to nearest integer
+  return {
+    x: Math.round(gridX),
+    y: Math.round(gridY)
+  };
 }
 
 /**
- * Calculate depth value for sorting sprites in isometric view
- * This ensures objects "behind" others in the isometric projection render correctly
+ * Get the screen depth (z-order) of a tile for rendering
+ * This ensures proper layering of tiles
  */
-export function getIsometricDepth(x: number, y: number, zOffset: number = 0): number {
-  // Base depth on position to ensure objects render in correct order
-  // Higher x+y = further back and lower in the scene
-  // Higher z = higher and should render on top of things at same x,y
-  return (x + y) * 10 + zOffset;
+export function getIsometricDepth(x: number, y: number, mapWidth: number, mapHeight: number): number {
+  // Calculate a depth value based on position in the grid
+  // This ensures tiles are drawn in the correct order (back to front)
+  return (x + y) / (mapWidth + mapHeight);
 }
 
 /**
- * Check if a position is within the map bounds
+ * Calculate the distance between two grid positions
  */
-export function isInBounds(x: number, y: number, mapWidth: number, mapHeight: number): boolean {
-  return x >= 0 && x < mapWidth && y >= 0 && y < mapHeight;
+export function gridDistance(x1: number, y1: number, x2: number, y2: number): number {
+  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 }
 
 /**
- * Calculate Manhattan distance between two points (grid distance, not Euclidean)
+ * Calculate Manhattan distance (grid steps) between two positions
  */
-export function getManhattanDistance(x1: number, y1: number, x2: number, y2: number): number {
-  return Math.abs(x1 - x2) + Math.abs(y1 - y2);
+export function manhattanDistance(x1: number, y1: number, x2: number, y2: number): number {
+  return Math.abs(x2 - x1) + Math.abs(y2 - y1);
 }
 
 /**
- * Get all grid positions adjacent to a given position
+ * Get all grid positions within a certain range of a position
  */
-export function getAdjacentTiles(x: number, y: number): { x: number, y: number }[] {
-  return [
-    { x: x+1, y: y },
-    { x: x-1, y: y },
-    { x: x, y: y+1 },
-    { x: x, y: y-1 }
-  ];
-}
-
-/**
- * Get all grid positions within a certain radius of a given position
- */
-export function getTilesInRadius(x: number, y: number, radius: number): { x: number, y: number }[] {
-  const tiles = [];
+export function getTilesInRange(x: number, y: number, range: number, mapWidth: number, mapHeight: number): { x: number, y: number }[] {
+  const tiles: { x: number, y: number }[] = [];
   
-  for (let dx = -radius; dx <= radius; dx++) {
-    for (let dy = -radius; dy <= radius; dy++) {
-      // Use Manhattan distance to limit to diamond shape
-      if (Math.abs(dx) + Math.abs(dy) <= radius) {
-        tiles.push({ x: x + dx, y: y + dy });
+  for (let dx = -range; dx <= range; dx++) {
+    for (let dy = -range; dy <= range; dy++) {
+      const nx = x + dx;
+      const ny = y + dy;
+      
+      // Make sure position is within map bounds
+      if (nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight) {
+        // Calculate Manhattan distance to ensure we're getting a diamond shape
+        if (Math.abs(dx) + Math.abs(dy) <= range) {
+          tiles.push({ x: nx, y: ny });
+        }
       }
     }
   }
@@ -84,73 +76,182 @@ export function getTilesInRadius(x: number, y: number, radius: number): { x: num
 }
 
 /**
- * Create a pathfinding grid path from start to target
- * Returns array of positions including start and target
- * This is a simple implementation and should be replaced with proper A* for a real game
+ * Get the adjacent tiles to a position
+ */
+export function getAdjacentTiles(x: number, y: number, mapWidth: number, mapHeight: number): { x: number, y: number }[] {
+  const directions = [
+    { dx: 0, dy: -1 },   // North
+    { dx: 1, dy: 0 },    // East
+    { dx: 0, dy: 1 },    // South
+    { dx: -1, dy: 0 }    // West
+  ];
+  
+  return directions
+    .map(dir => ({ x: x + dir.dx, y: y + dir.dy }))
+    .filter(pos => pos.x >= 0 && pos.x < mapWidth && pos.y >= 0 && pos.y < mapHeight);
+}
+
+/**
+ * Get the diagonal tiles to a position
+ */
+export function getDiagonalTiles(x: number, y: number, mapWidth: number, mapHeight: number): { x: number, y: number }[] {
+  const directions = [
+    { dx: 1, dy: -1 },   // Northeast
+    { dx: 1, dy: 1 },    // Southeast
+    { dx: -1, dy: 1 },   // Southwest
+    { dx: -1, dy: -1 }   // Northwest
+  ];
+  
+  return directions
+    .map(dir => ({ x: x + dir.dx, y: y + dir.dy }))
+    .filter(pos => pos.x >= 0 && pos.x < mapWidth && pos.y >= 0 && pos.y < mapHeight);
+}
+
+/**
+ * Get all tiles surrounding a position (adjacent + diagonal)
+ */
+export function getSurroundingTiles(x: number, y: number, mapWidth: number, mapHeight: number): { x: number, y: number }[] {
+  return [
+    ...getAdjacentTiles(x, y, mapWidth, mapHeight),
+    ...getDiagonalTiles(x, y, mapWidth, mapHeight)
+  ];
+}
+
+/**
+ * Calculate a path between two points using A* algorithm
+ * @param startX Starting X coordinate
+ * @param startY Starting Y coordinate
+ * @param targetX Target X coordinate
+ * @param targetY Target Y coordinate
+ * @param isPassable Function that determines if a tile is passable
+ * @param getMovementCost Function that returns the movement cost for a tile
+ * @param mapWidth Width of the map
+ * @param mapHeight Height of the map
  */
 export function findPath(
   startX: number, 
   startY: number, 
   targetX: number, 
-  targetY: number, 
-  isWalkableFn: (x: number, y: number) => boolean
+  targetY: number,
+  isPassable: (x: number, y: number) => boolean,
+  getMovementCost: (x: number, y: number) => number,
+  mapWidth: number,
+  mapHeight: number
 ): { x: number, y: number }[] {
-  // Very simple direct path implementation
-  // In real implementation, use A* or other pathfinding algorithm
+  // Implementation of A* pathfinding algorithm
   
-  const path: { x: number, y: number }[] = [{ x: startX, y: startY }];
-  let currentX = startX;
-  let currentY = startY;
+  // Node representation for the algorithm
+  interface Node {
+    x: number;
+    y: number;
+    g: number; // Cost from start to this node
+    h: number; // Heuristic (estimated cost from this node to target)
+    f: number; // Total cost (g + h)
+    parent: Node | null;
+  }
   
-  // Maximum number of steps to prevent infinite loops
-  const maxSteps = 100;
-  let steps = 0;
+  // Helper function to calculate heuristic (Manhattan distance)
+  const heuristic = (x: number, y: number): number => {
+    return Math.abs(targetX - x) + Math.abs(targetY - y);
+  };
   
-  while ((currentX !== targetX || currentY !== targetY) && steps < maxSteps) {
-    steps++;
-    
-    // Direction to move in X
-    if (currentX < targetX && isWalkableFn(currentX + 1, currentY)) {
-      currentX++;
-    } else if (currentX > targetX && isWalkableFn(currentX - 1, currentY)) {
-      currentX--;
-    }
-    // Direction to move in Y
-    else if (currentY < targetY && isWalkableFn(currentX, currentY + 1)) {
-      currentY++;
-    } else if (currentY > targetY && isWalkableFn(currentX, currentY - 1)) {
-      currentY--;
-    }
-    // Can't move directly, try diagonal/adjacent
-    else {
-      // Check all adjacent tiles
-      const adjacentTiles = getAdjacentTiles(currentX, currentY)
-        .filter(t => isWalkableFn(t.x, t.y))
-        .sort((a, b) => {
-          // Sort by distance to target
-          const distA = getManhattanDistance(a.x, a.y, targetX, targetY);
-          const distB = getManhattanDistance(b.x, b.y, targetX, targetY);
-          return distA - distB;
-        });
-      
-      // Take the best available move (closest to target)
-      if (adjacentTiles.length > 0) {
-        currentX = adjacentTiles[0].x;
-        currentY = adjacentTiles[0].y;
-      } else {
-        // No path possible
-        break;
+  // Initialize open and closed lists
+  const openList: Node[] = [];
+  const closedList: Map<string, boolean> = new Map();
+  
+  // Create start node
+  const startNode: Node = {
+    x: startX,
+    y: startY,
+    g: 0,
+    h: heuristic(startX, startY),
+    f: heuristic(startX, startY),
+    parent: null
+  };
+  
+  // Add start node to open list
+  openList.push(startNode);
+  
+  // Loop until we find the path or exhaust possibilities
+  while (openList.length > 0) {
+    // Find node with lowest f cost
+    let currentIndex = 0;
+    for (let i = 0; i < openList.length; i++) {
+      if (openList[i].f < openList[currentIndex].f) {
+        currentIndex = i;
       }
     }
     
-    // Add current position to path
-    path.push({ x: currentX, y: currentY });
+    // Get the current node
+    const currentNode = openList[currentIndex];
     
-    // If reached target, stop
-    if (currentX === targetX && currentY === targetY) {
-      break;
+    // Check if we've reached the target
+    if (currentNode.x === targetX && currentNode.y === targetY) {
+      // Reconstruct path
+      const path: { x: number, y: number }[] = [];
+      let current: Node | null = currentNode;
+      
+      while (current !== null) {
+        path.unshift({ x: current.x, y: current.y });
+        current = current.parent;
+      }
+      
+      return path;
+    }
+    
+    // Remove current node from open list and add to closed list
+    openList.splice(currentIndex, 1);
+    closedList.set(`${currentNode.x},${currentNode.y}`, true);
+    
+    // Check all adjacent tiles
+    const directions = [
+      { dx: 0, dy: -1 },  // North
+      { dx: 1, dy: 0 },   // East
+      { dx: 0, dy: 1 },   // South
+      { dx: -1, dy: 0 }   // West
+    ];
+    
+    for (const dir of directions) {
+      const nextX = currentNode.x + dir.dx;
+      const nextY = currentNode.y + dir.dy;
+      
+      // Check if position is valid
+      if (
+        nextX >= 0 && nextX < mapWidth &&
+        nextY >= 0 && nextY < mapHeight &&
+        isPassable(nextX, nextY) &&
+        !closedList.has(`${nextX},${nextY}`)
+      ) {
+        // Calculate costs
+        const movementCost = getMovementCost(nextX, nextY);
+        const gCost = currentNode.g + movementCost;
+        const hCost = heuristic(nextX, nextY);
+        const fCost = gCost + hCost;
+        
+        // Check if node is already in open list with a better path
+        const existingNodeIndex = openList.findIndex(node => node.x === nextX && node.y === nextY);
+        
+        if (existingNodeIndex === -1 || gCost < openList[existingNodeIndex].g) {
+          // Create new node or update existing one
+          const newNode: Node = {
+            x: nextX,
+            y: nextY,
+            g: gCost,
+            h: hCost,
+            f: fCost,
+            parent: currentNode
+          };
+          
+          if (existingNodeIndex === -1) {
+            openList.push(newNode);
+          } else {
+            openList[existingNodeIndex] = newNode;
+          }
+        }
+      }
     }
   }
   
-  return path;
+  // No path found
+  return [];
 }

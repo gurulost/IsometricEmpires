@@ -1,212 +1,339 @@
 import { create } from 'zustand';
-import { ResourceType } from '../../game/config/resources';
-import { FactionType } from '../../game/config/factions';
+import { FactionType } from '@/game/config/factions';
+import { generateId } from '@/lib/utils';
 
-// Resource production rates
-export interface ProductionRates {
+// Game phases
+export enum GamePhase {
+  SETUP = 'setup',
+  PLAYING = 'playing',
+  GAME_OVER = 'game_over'
+}
+
+// Player types
+export enum PlayerType {
+  HUMAN = 'human',
+  AI = 'ai'
+}
+
+// Resources in the game
+export interface Resources {
   food: number;
   production: number;
   faith: number;
 }
 
-// City resources data
-export interface CityResourceData {
-  id: string;
-  cityId: string;
-  playerId: string;
-  production?: ProductionRates;
-  storage?: {
-    food: number;
-    production: number;
-    faith: number;
-  };
-  currentProduction?: {
-    type: 'unit' | 'building';
-    id: string;
-    progress: number;
-    totalCost: number;
-  };
-}
-
-// Entity types
-export type EntityType = 'unit' | 'building' | 'city' | 'tile';
-
-// Selected entity data
-export interface SelectedEntity {
-  id: string;
-  type: EntityType;
-  data: any; // This would be typed more specifically in a real implementation
-}
-
 // Player data
 export interface Player {
   id: string;
+  name: string;
   faction: FactionType;
-  isHuman: boolean;
-  name?: string;
-  color?: string;
-  score?: number;
-  turnsPlayed?: number;
+  type: PlayerType;
+  resources: Resources;
+  technologies: string[];
+  score: number;
+  isEliminated: boolean;
 }
 
-// Game state interface
+// Map settings
+export interface MapSettings {
+  width: number;
+  height: number;
+  seed?: number;
+  terrainType: 'nephiLands' | 'lamaniteLands' | 'jarediteWilderness' | 'landBountiful' | 'landDesolation' | 'random';
+}
+
+// Game settings
+export interface GameSettings {
+  mapSettings: MapSettings;
+  difficulty: 'easy' | 'normal' | 'hard';
+  gameSpeed: 'quick' | 'standard' | 'marathon';
+  victoryTypes: ('domination' | 'cultural' | 'religious')[];
+}
+
+// Selected entity in the UI
+export interface SelectedEntity {
+  type: 'tile' | 'unit' | 'city' | 'building';
+  id: string;
+  data: any; // Will contain entity-specific data
+}
+
+// Game state
 export interface GameState {
   // Game status
-  gameStarted: boolean;
-  gamePaused: boolean;
-  gameOver: boolean;
-  winner: string | null;
-  
-  // Game setup 
-  mapWidth: number;
-  mapHeight: number;
-  
-  // Turn information
+  initialized: boolean;
+  phase: GamePhase;
   currentTurn: number;
-  currentPlayerId: string;
+  currentPlayerId: string | null;
   
-  // Players information
-  players: Player[];
+  // Players
+  players: Record<string, Player>;
+  localPlayerId: string | null;
   
-  // Resources
-  globalResources: {
-    [ResourceType.FOOD]: number;
-    [ResourceType.PRODUCTION]: number;
-    [ResourceType.FAITH]: number;
-  };
-  
-  // Cities and resources
-  cityResources: Record<string, CityResourceData>;
+  // Game settings
+  settings: GameSettings;
   
   // UI state
   selectedEntity: SelectedEntity | null;
-  activePanel: string | null;
+  hoveredTileId: string | null;
   
   // Actions
-  setGameStarted: (started: boolean) => void;
-  setGamePaused: (paused: boolean) => void;
-  setGameOver: (over: boolean, winner?: string) => void;
-  setCurrentPlayer: (playerId: string) => void;
-  advanceTurn: () => void;
-  updateResources: (resources: Partial<Record<ResourceType, number>>) => void;
+  initializeGame: (players: Partial<Player>[], settings: Partial<GameSettings>) => void;
+  startGame: () => void;
+  endTurn: () => void;
+  addResources: (playerId: string, resources: Partial<Resources>) => void;
   selectEntity: (entity: SelectedEntity | null) => void;
-  setActivePanel: (panel: string | null) => void;
-  updateCityResources: (cityId: string, data: Partial<CityResourceData>) => void;
+  setHoveredTile: (tileId: string | null) => void;
+  setCurrentPlayerId: (playerId: string) => void;
+  addTechnology: (playerId: string, technology: string) => void;
+  eliminatePlayer: (playerId: string) => void;
+  updatePlayerScore: (playerId: string, score: number) => void;
 }
 
-// Create the game state store
-export const useGameState = create<GameState>((set) => ({
-  // Initial game status
-  gameStarted: false,
-  gamePaused: false,
-  gameOver: false,
-  winner: null,
-  
-  // Map dimensions (will be set by the game engine)
-  mapWidth: 800,
-  mapHeight: 600,
-  
-  // Initial turn information
+export const useGameState = create<GameState>((set, get) => ({
+  // Initial state
+  initialized: false,
+  phase: GamePhase.SETUP,
   currentTurn: 1,
-  currentPlayerId: 'player_1',
+  currentPlayerId: null,
   
-  // Initial players (will be set during game setup)
-  players: [
-    {
-      id: 'player_1',
-      faction: FactionType.NEPHITE,
-      isHuman: true,
-      name: 'Player',
-      color: '#3b82f6',
-      score: 0,
-      turnsPlayed: 0
+  players: {},
+  localPlayerId: null,
+  
+  settings: {
+    mapSettings: {
+      width: 20,
+      height: 20,
+      terrainType: 'nephiLands'
     },
-    {
-      id: 'ai_1',
-      faction: FactionType.LAMANITE,
-      isHuman: false,
-      name: 'AI Opponent',
-      color: '#ef4444',
-      score: 0,
-      turnsPlayed: 0
-    }
-  ],
-  
-  // Initial resources
-  globalResources: {
-    [ResourceType.FOOD]: 0,
-    [ResourceType.PRODUCTION]: 0,
-    [ResourceType.FAITH]: 0
+    difficulty: 'normal',
+    gameSpeed: 'standard',
+    victoryTypes: ['domination', 'cultural', 'religious']
   },
   
-  // City resources
-  cityResources: {},
-  
-  // UI state
   selectedEntity: null,
-  activePanel: null,
+  hoveredTileId: null,
   
   // Actions
-  setGameStarted: (started) => set({ gameStarted: started }),
-  
-  setGamePaused: (paused) => set({ gamePaused: paused }),
-  
-  setGameOver: (over, winner = null) => set({ 
-    gameOver: over,
-    winner
-  }),
-  
-  setCurrentPlayer: (playerId) => set({ currentPlayerId: playerId }),
-  
-  advanceTurn: () => set(state => {
-    // Find next player index
-    const currentPlayerIndex = state.players.findIndex(p => p.id === state.currentPlayerId);
-    const nextPlayerIndex = (currentPlayerIndex + 1) % state.players.length;
-    const nextPlayer = state.players[nextPlayerIndex];
+  initializeGame: (players, settingsOverride) => {
+    const playersRecord: Record<string, Player> = {};
     
-    // If we've gone through all players, increment turn
-    const newTurn = nextPlayerIndex === 0 ? state.currentTurn + 1 : state.currentTurn;
+    // Process players
+    players.forEach(player => {
+      const id = player.id || generateId('player');
+      
+      playersRecord[id] = {
+        id,
+        name: player.name || `Player ${Object.keys(playersRecord).length + 1}`,
+        faction: player.faction || FactionType.NEPHITES,
+        type: player.type || PlayerType.AI,
+        resources: player.resources || { food: 0, production: 0, faith: 0 },
+        technologies: player.technologies || [],
+        score: player.score || 0,
+        isEliminated: player.isEliminated || false
+      };
+      
+      // Set local player (first human player)
+      if (playersRecord[id].type === PlayerType.HUMAN && !get().localPlayerId) {
+        set({ localPlayerId: id });
+      }
+    });
     
-    // Update turns played for the player who just finished their turn
-    const updatedPlayers = [...state.players];
-    updatedPlayers[currentPlayerIndex] = {
-      ...updatedPlayers[currentPlayerIndex],
-      turnsPlayed: (updatedPlayers[currentPlayerIndex].turnsPlayed || 0) + 1
-    };
-    
-    return {
-      currentPlayerId: nextPlayer.id,
-      currentTurn: newTurn,
-      players: updatedPlayers
-    };
-  }),
-  
-  updateResources: (resources) => set(state => ({
-    globalResources: {
-      ...state.globalResources,
-      ...resources
-    }
-  })),
-  
-  selectEntity: (entity) => set({ selectedEntity: entity }),
-  
-  setActivePanel: (panel) => set({ activePanel: panel }),
-  
-  updateCityResources: (cityId, data) => set(state => {
-    const existingData = state.cityResources[cityId] || {
-      id: cityId,
-      cityId,
-      playerId: state.currentPlayerId
-    };
-    
-    return {
-      cityResources: {
-        ...state.cityResources,
-        [cityId]: {
-          ...existingData,
-          ...data
-        }
+    // Apply settings
+    const currentSettings = get().settings;
+    const newSettings = {
+      ...currentSettings,
+      ...settingsOverride,
+      mapSettings: {
+        ...currentSettings.mapSettings,
+        ...(settingsOverride?.mapSettings || {})
       }
     };
-  })
+    
+    // Set the first player as current
+    const firstPlayerId = Object.keys(playersRecord)[0] || '';
+    
+    set({
+      players: playersRecord,
+      settings: newSettings,
+      currentPlayerId: firstPlayerId || null,
+      initialized: true
+    });
+    
+    console.log('Game initialized with players:', playersRecord);
+  },
+  
+  startGame: () => {
+    if (!get().initialized) {
+      console.error('Cannot start game - not initialized');
+      return;
+    }
+    
+    set({
+      phase: GamePhase.PLAYING,
+      currentTurn: 1
+    });
+    
+    console.log('Game started');
+  },
+  
+  endTurn: () => {
+    if (get().phase !== GamePhase.PLAYING) return;
+    
+    const currentPlayerId = get().currentPlayerId;
+    if (!currentPlayerId) return;
+    
+    const playerIds = Object.keys(get().players).filter(
+      id => !get().players[id].isEliminated
+    );
+    
+    if (playerIds.length <= 1) {
+      // Game over condition - only one player left
+      set({ phase: GamePhase.GAME_OVER });
+      return;
+    }
+    
+    // Find next player
+    const currentIndex = playerIds.indexOf(currentPlayerId);
+    const nextIndex = (currentIndex + 1) % playerIds.length;
+    const nextPlayerId = playerIds[nextIndex];
+    
+    // If we've gone through all players, increment turn
+    const newTurn = nextIndex === 0 ? get().currentTurn + 1 : get().currentTurn;
+    
+    set({
+      currentPlayerId: nextPlayerId,
+      currentTurn: newTurn
+    });
+    
+    console.log(`Turn ended. Now player ${nextPlayerId}'s turn. Turn ${newTurn}`);
+  },
+  
+  addResources: (playerId, resources) => {
+    const player = get().players[playerId];
+    if (!player) return;
+    
+    set({
+      players: {
+        ...get().players,
+        [playerId]: {
+          ...player,
+          resources: {
+            food: player.resources.food + (resources.food || 0),
+            production: player.resources.production + (resources.production || 0),
+            faith: player.resources.faith + (resources.faith || 0)
+          }
+        }
+      }
+    });
+  },
+  
+  selectEntity: (entity) => {
+    set({ selectedEntity: entity });
+  },
+  
+  setHoveredTile: (tileId) => {
+    set({ hoveredTileId: tileId });
+  },
+  
+  setCurrentPlayerId: (playerId) => {
+    if (get().players[playerId]) {
+      set({ currentPlayerId: playerId });
+    }
+  },
+  
+  addTechnology: (playerId, technology) => {
+    const player = get().players[playerId];
+    if (!player) return;
+    
+    // Only add if not already researched
+    if (player.technologies.includes(technology)) return;
+    
+    set({
+      players: {
+        ...get().players,
+        [playerId]: {
+          ...player,
+          technologies: [...player.technologies, technology]
+        }
+      }
+    });
+  },
+  
+  eliminatePlayer: (playerId) => {
+    const player = get().players[playerId];
+    if (!player) return;
+    
+    set({
+      players: {
+        ...get().players,
+        [playerId]: {
+          ...player,
+          isEliminated: true
+        }
+      }
+    });
+    
+    // Check for game over
+    const remainingPlayers = Object.values(get().players).filter(p => !p.isEliminated);
+    if (remainingPlayers.length <= 1) {
+      set({ phase: GamePhase.GAME_OVER });
+    }
+    
+    // If current player is eliminated, move to next player
+    if (get().currentPlayerId === playerId) {
+      get().endTurn();
+    }
+  },
+  
+  updatePlayerScore: (playerId, score) => {
+    const player = get().players[playerId];
+    if (!player) return;
+    
+    set({
+      players: {
+        ...get().players,
+        [playerId]: {
+          ...player,
+          score
+        }
+      }
+    });
+  }
 }));
+
+// Helper selectors for commonly used state
+export const usePlayer = (playerId: string) => {
+  return useGameState(state => state.players[playerId]);
+};
+
+export const useLocalPlayer = () => {
+  return useGameState(state => {
+    const localPlayerId = state.localPlayerId;
+    return localPlayerId ? state.players[localPlayerId] : null;
+  });
+};
+
+export const useIsCurrentPlayerTurn = () => {
+  return useGameState(state => 
+    state.localPlayerId !== null && state.currentPlayerId === state.localPlayerId
+  );
+};
+
+export const useCurrentPlayer = () => {
+  return useGameState(state => {
+    const currentPlayerId = state.currentPlayerId;
+    return currentPlayerId ? state.players[currentPlayerId] : null;
+  });
+};
+
+export const useSelectedEntity = () => {
+  return useGameState(state => state.selectedEntity);
+};
+
+export const useIsGamePlaying = () => {
+  return useGameState(state => state.phase === GamePhase.PLAYING);
+};
+
+export const useGameSettings = () => {
+  return useGameState(state => state.settings);
+};

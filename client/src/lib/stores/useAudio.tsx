@@ -1,225 +1,167 @@
 import { create } from 'zustand';
-
-// Define sound types with associated paths
-export const SOUNDS = {
-  // UI sounds
-  select: '/audio/select.mp3',
-  select_city: '/audio/select_city.mp3',
-  button_click: '/audio/button_click.mp3',
-  error: '/audio/error.mp3',
-  
-  // Game event sounds
-  game_start: '/audio/game_start.mp3',
-  turn_start: '/audio/turn_start.mp3',
-  combat: '/audio/combat.mp3',
-  building_complete: '/audio/building_complete.mp3',
-  unit_created: '/audio/unit_created.mp3',
-  tech_discovered: '/audio/tech_discovered.mp3',
-  city_founded: '/audio/city_founded.mp3',
-  
-  // Ambient sounds
-  ambient_music: '/audio/ambient_music.mp3'
-};
-
-export type SoundName = keyof typeof SOUNDS;
+import { Howl, Howler } from 'howler';
 
 // Audio state interface
 export interface AudioState {
-  // Audio settings
-  masterVolume: number;
-  sfxVolume: number;
-  musicVolume: number;
-  muteSfx: boolean;
-  muteMusic: boolean;
+  // State
+  isMuted: boolean;
+  volume: number;
   
-  // Audio management
-  currentMusic: string | null;
-  audioCache: Map<string, HTMLAudioElement>;
+  // Sound effects
+  sfx: {
+    [key: string]: Howl;
+  };
+  
+  // Music
+  backgroundMusic: Howl | null;
+  currentMusicKey: string | null;
   
   // Actions
-  playSound: (soundName: SoundName) => void;
-  playMusic: (soundName: SoundName, loop?: boolean) => void;
+  setVolume: (volume: number) => void;
+  toggleMute: () => void;
+  setMute: (muted: boolean) => void;
+  
+  playSound: (key: string) => void;
+  playMusic: (key: string, loop?: boolean) => void;
   stopMusic: () => void;
-  setMasterVolume: (volume: number) => void;
-  setSfxVolume: (volume: number) => void;
-  setMusicVolume: (volume: number) => void;
-  toggleMuteSfx: () => void;
-  toggleMuteMusic: () => void;
+  
+  setBackgroundMusic: (key: string, howl: Howl) => void;
+  setSoundEffect: (key: string, howl: Howl) => void;
 }
 
-// Create the audio store
+// Create audio store
 export const useAudio = create<AudioState>((set, get) => ({
-  // Settings with defaults
-  masterVolume: 0.7,
-  sfxVolume: 0.8,
-  musicVolume: 0.5,
-  muteSfx: false,
-  muteMusic: false,
-  
-  // State
-  currentMusic: null,
-  audioCache: new Map(),
-  
-  // Play a sound effect
-  playSound: (soundName: SoundName) => {
-    const state = get();
-    if (state.muteSfx) return;
-    
-    try {
-      const soundPath = SOUNDS[soundName];
-      let audio = state.audioCache.get(soundPath);
-      
-      if (!audio) {
-        audio = new Audio(soundPath);
-        state.audioCache.set(soundPath, audio);
-      } else {
-        // Reset audio to beginning if it's already playing
-        audio.currentTime = 0;
-      }
-      
-      // Apply volume settings
-      audio.volume = state.masterVolume * state.sfxVolume;
-      
-      // Play the sound
-      audio.play().catch(err => {
-        console.warn('Failed to play sound:', soundName, err);
-      });
-    } catch (error) {
-      console.error('Error playing sound:', error);
-    }
-  },
-  
-  // Play music
-  playMusic: (soundName: SoundName, loop = true) => {
-    const state = get();
-    const soundPath = SOUNDS[soundName];
-    
-    // Stop current music if playing
-    state.stopMusic();
-    
-    if (state.muteMusic) {
-      set({ currentMusic: soundPath });
-      return;
-    }
-    
-    try {
-      let audio = state.audioCache.get(soundPath);
-      
-      if (!audio) {
-        audio = new Audio(soundPath);
-        state.audioCache.set(soundPath, audio);
-      }
-      
-      // Configure audio
-      audio.loop = loop;
-      audio.volume = state.masterVolume * state.musicVolume;
-      audio.currentTime = 0;
-      
-      // Play music
-      audio.play().catch(err => {
-        console.warn('Failed to play music:', soundName, err);
-      });
-      
-      // Update state
-      set({ currentMusic: soundPath });
-    } catch (error) {
-      console.error('Error playing music:', error);
-    }
-  },
-  
-  // Stop music
-  stopMusic: () => {
-    const state = get();
-    const { currentMusic, audioCache } = state;
-    
-    if (currentMusic && audioCache.has(currentMusic)) {
-      const audio = audioCache.get(currentMusic)!;
-      audio.pause();
-      audio.currentTime = 0;
-    }
-    
-    set({ currentMusic: null });
-  },
+  // Initial state
+  isMuted: false,
+  volume: 0.5,
+  sfx: {},
+  backgroundMusic: null,
+  currentMusicKey: null,
   
   // Volume controls
-  setMasterVolume: (volume: number) => {
-    const state = get();
-    const clampedVolume = Math.max(0, Math.min(1, volume));
+  setVolume: (volume: number) => {
+    const newVolume = Math.min(1, Math.max(0, volume));
     
-    // Update all currently cached audio elements
-    state.audioCache.forEach(audio => {
-      if (audio.src.includes('music')) {
-        audio.volume = clampedVolume * state.musicVolume;
-      } else {
-        audio.volume = clampedVolume * state.sfxVolume;
-      }
-    });
+    // Update Howler global volume
+    Howler.volume(newVolume);
     
-    set({ masterVolume: clampedVolume });
+    set({ volume: newVolume });
   },
   
-  setSfxVolume: (volume: number) => {
-    const state = get();
-    const clampedVolume = Math.max(0, Math.min(1, volume));
-    
-    // Update SFX audio elements
-    state.audioCache.forEach(audio => {
-      if (!audio.src.includes('music')) {
-        audio.volume = state.masterVolume * clampedVolume;
-      }
-    });
-    
-    set({ sfxVolume: clampedVolume });
+  toggleMute: () => {
+    const newMuted = !get().isMuted;
+    Howler.mute(newMuted);
+    set({ isMuted: newMuted });
   },
   
-  setMusicVolume: (volume: number) => {
-    const state = get();
-    const clampedVolume = Math.max(0, Math.min(1, volume));
-    
-    // Update music audio elements
-    state.audioCache.forEach(audio => {
-      if (audio.src.includes('music')) {
-        audio.volume = state.masterVolume * clampedVolume;
-      }
-    });
-    
-    set({ musicVolume: clampedVolume });
+  setMute: (muted: boolean) => {
+    Howler.mute(muted);
+    set({ isMuted: muted });
   },
   
-  // Mute toggles
-  toggleMuteSfx: () => {
-    const state = get();
-    const newMuteState = !state.muteSfx;
+  // Sound effects
+  playSound: (key: string) => {
+    const { sfx, isMuted } = get();
     
-    // Mute/unmute all non-music audio
-    state.audioCache.forEach(audio => {
-      if (!audio.src.includes('music')) {
-        if (newMuteState) {
-          audio.pause();
-        }
-      }
-    });
+    if (isMuted) return;
     
-    set({ muteSfx: newMuteState });
+    const sound = sfx[key];
+    if (sound) {
+      sound.play();
+    } else {
+      console.warn(`Failed to play sound:`, key);
+    }
   },
   
-  toggleMuteMusic: () => {
-    const state = get();
-    const newMuteState = !state.muteMusic;
-    const { currentMusic, audioCache } = state;
+  // Music
+  playMusic: (key: string, loop = true) => {
+    const { sfx, backgroundMusic, currentMusicKey, isMuted } = get();
     
-    if (currentMusic && audioCache.has(currentMusic)) {
-      const audio = audioCache.get(currentMusic)!;
-      
-      if (newMuteState) {
-        audio.pause();
-      } else {
-        audio.play().catch(err => {
-          console.warn('Failed to resume music:', err);
-        });
-      }
+    // Stop current music if playing
+    if (backgroundMusic && currentMusicKey) {
+      backgroundMusic.stop();
     }
     
-    set({ muteMusic: newMuteState });
+    // Play new music
+    const music = sfx[key];
+    if (music) {
+      music.loop(loop);
+      if (!isMuted) {
+        music.play();
+      }
+      set({ 
+        backgroundMusic: music,
+        currentMusicKey: key
+      });
+    } else {
+      console.warn(`Failed to play music:`, key);
+    }
+  },
+  
+  stopMusic: () => {
+    const { backgroundMusic } = get();
+    if (backgroundMusic) {
+      backgroundMusic.stop();
+      set({ 
+        backgroundMusic: null,
+        currentMusicKey: null
+      });
+    }
+  },
+  
+  // Set sound assets
+  setBackgroundMusic: (key: string, howl: Howl) => {
+    set(state => ({
+      sfx: {
+        ...state.sfx,
+        [key]: howl
+      }
+    }));
+  },
+  
+  setSoundEffect: (key: string, howl: Howl) => {
+    set(state => ({
+      sfx: {
+        ...state.sfx,
+        [key]: howl
+      }
+    }));
   }
 }));
+
+// Helper functions
+export const useIsMuted = () => useAudio(state => state.isMuted);
+export const useVolume = () => useAudio(state => state.volume);
+export const usePlaySound = () => useAudio(state => state.playSound);
+export const usePlayMusic = () => useAudio(state => state.playMusic);
+export const useStopMusic = () => useAudio(state => state.stopMusic);
+export const useToggleMute = () => useAudio(state => state.toggleMute);
+export const useSetVolume = () => useAudio(state => state.setVolume);
+
+// Common game sounds
+export const useSoundEffects = () => {
+  const playSound = usePlaySound();
+  
+  return {
+    playClick: () => playSound('click'),
+    playSuccess: () => playSound('success'),
+    playError: () => playSound('error'),
+    playBattle: () => playSound('battle'),
+    playConstruct: () => playSound('construct'),
+    playResearch: () => playSound('research')
+  };
+};
+
+// Game music themes
+export const useGameMusic = () => {
+  const playMusic = usePlayMusic();
+  const stopMusic = useStopMusic();
+  
+  return {
+    playMainTheme: () => playMusic('main_theme'),
+    playBattleTheme: () => playMusic('battle_theme'),
+    playVictoryTheme: () => playMusic('victory_theme'),
+    playAmbientMusic: () => playMusic('ambient_music'),
+    stopAllMusic: stopMusic
+  };
+};

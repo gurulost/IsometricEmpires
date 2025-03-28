@@ -1,129 +1,143 @@
 /**
- * Game event system using DOM Custom Events to enable communication
- * between React components and the Phaser game instance
+ * Event system for game-wide communication
  */
 
-// Command types/names - used to communicate from React UI to Phaser
-export const COMMANDS = {
-  // Camera controls
+// Define event names as constants
+export const EVENTS = {
+  // Camera events
   MOVE_CAMERA: 'move-camera',
   ZOOM_CAMERA: 'zoom-camera',
   CENTER_ON_POSITION: 'center-on-position',
   
-  // Unit controls
+  // Unit events
   MOVE_UNIT: 'move-unit',
   ATTACK_TARGET: 'attack-target',
-  BUILD_IMPROVEMENT: 'build-improvement',
-  FOUND_CITY: 'found-city',
-  
-  // City controls
-  PRODUCE_UNIT: 'produce-unit',
-  PRODUCE_BUILDING: 'produce-building',
-  CHANGE_PRODUCTION: 'change-production',
-  ASSIGN_CITIZEN: 'assign-citizen',
-  
-  // Game controls
-  END_TURN: 'end-turn',
-  RESEARCH_TECH: 'research-tech',
-  TOGGLE_GRID: 'toggle-grid',
-  
-  // UI events
-  SELECT_ENTITY: 'select-entity',
-  SHOW_CITY_DETAILS: 'show-city-details',
-  
-  // Game state events (dispatched by Phaser to notify React)
-  TURN_STARTED: 'turn-started', 
-  GAME_INITIALIZED: 'game-initialized',
-  RESOURCES_UPDATED: 'resources-updated',
   UNIT_MOVED: 'unit-moved',
   UNIT_ATTACKED: 'unit-attacked',
+  UNIT_DAMAGED: 'unit-damaged',
+  UNIT_DESTROYED: 'unit-destroyed',
+  UNIT_CREATED: 'unit-created',
+  UNIT_SELECTED: 'unit-selected',
+  UNIT_DESELECTED: 'unit-deselected',
+  
+  // Terrain events
+  BUILD_IMPROVEMENT: 'build-improvement',
+  IMPROVEMENT_BUILT: 'improvement-built',
+  IMPROVEMENT_DESTROYED: 'improvement-destroyed',
+  TILE_SELECTED: 'tile-selected',
+  TILE_DESELECTED: 'tile-deselected',
+  
+  // City events
+  FOUND_CITY: 'found-city',
   CITY_FOUNDED: 'city-founded',
-  BUILDING_CREATED: 'building-created',
+  CITY_SELECTED: 'city-selected',
+  CITY_DESELECTED: 'city-deselected',
+  PRODUCE_UNIT: 'produce-unit',
+  PRODUCE_BUILDING: 'produce-building',
+  BUILDING_CONSTRUCTED: 'building-constructed',
+  
+  // Resource events
+  RESOURCE_GATHERED: 'resource-gathered',
+  RESOURCE_DEPLETED: 'resource-depleted',
+  RESOURCE_DISCOVERED: 'resource-discovered',
+  
+  // Turn events
+  END_TURN: 'end-turn',
+  TURN_STARTED: 'turn-started',
+  PLAYER_TURN_ENDED: 'player-turn-ended',
+  PLAYER_TURN_STARTED: 'player-turn-started',
+  
+  // Technology events
+  RESEARCH_TECH: 'research-tech',
   TECH_RESEARCHED: 'tech-researched'
 };
 
-// Custom event types
-export type GameEventData = Record<string, any>;
-
 /**
- * Dispatch a DOM custom event to communicate between React and Phaser
+ * Custom event with typed detail field
  */
-export function dispatchDOMEvent(eventType: string, data: GameEventData): void {
-  try {
-    const event = new CustomEvent(eventType, { 
-      detail: data,
-      bubbles: true,
-      cancelable: true
-    });
-    
-    document.dispatchEvent(event);
-    console.log(`Event dispatched: ${eventType}`, data);
-  } catch (error) {
-    console.error(`Error dispatching event ${eventType}:`, error);
+export class GameEvent<T = any> extends CustomEvent<T> {
+  constructor(type: string, detail: T) {
+    super(type, { detail, bubbles: true });
   }
 }
 
 /**
- * Register an event listener
+ * Central event bus for game-wide communication
  */
-export function registerEventListener(
-  eventType: string, 
-  callback: EventListener
-): void {
-  document.addEventListener(eventType, callback);
+class EventBus extends EventTarget {
+  /**
+   * Emit an event with data
+   */
+  emit<T>(eventName: string, data: T): void {
+    const event = new GameEvent(eventName, data);
+    this.dispatchEvent(event);
+  }
+  
+  /**
+   * Add event listener with proper typing
+   */
+  on<T>(eventName: string, callback: (event: GameEvent<T>) => void): void {
+    this.addEventListener(eventName, callback as EventListener);
+  }
+  
+  /**
+   * Remove event listener
+   */
+  off<T>(eventName: string, callback: (event: GameEvent<T>) => void): void {
+    this.removeEventListener(eventName, callback as EventListener);
+  }
+  
+  /**
+   * Add one-time event listener
+   */
+  once<T>(eventName: string, callback: (event: GameEvent<T>) => void): void {
+    const wrappedCallback = (event: Event) => {
+      this.removeEventListener(eventName, wrappedCallback);
+      callback(event as GameEvent<T>);
+    };
+    
+    this.addEventListener(eventName, wrappedCallback);
+  }
 }
 
-/**
- * Remove an event listener
- */
-export function removeEventListener(
-  eventType: string, 
-  callback: EventListener
-): void {
-  document.removeEventListener(eventType, callback);
+// Create and export a singleton instance
+export const eventBus = new EventBus();
+
+// Interface for components that need event handling
+export interface EventHandler {
+  registerEvents(): void;
+  unregisterEvents(): void;
 }
 
-/**
- * Handle DOM events in Phaser scene
- * @param scene The Phaser Scene to handle events
- * @param eventType The event type/name to listen for
- * @param handler The function to handle the event
- */
-export function handleDOMEvent(
-  scene: Phaser.Scene,
-  eventType: string,
-  handler: (data: any) => void
-): void {
-  const eventHandler = (event: Event) => {
-    const customEvent = event as CustomEvent;
-    handler(customEvent.detail);
+// Helper function to create custom events
+export function createGameEvent<T>(eventName: string, data: T): CustomEvent<T> {
+  return new CustomEvent(eventName, {
+    detail: data,
+    bubbles: true
+  });
+}
+
+// Helper to dispatch events to the document
+export function dispatchGameEvent<T>(eventName: string, data: T): void {
+  const event = createGameEvent(eventName, data);
+  document.dispatchEvent(event);
+}
+
+// Helper to listen for game events on the document
+export function listenForGameEvent<T>(
+  eventName: string, 
+  callback: (data: T) => void, 
+  target: EventTarget = document
+): () => void {
+  const handler = (event: Event) => {
+    const customEvent = event as CustomEvent<T>;
+    callback(customEvent.detail);
   };
   
-  document.addEventListener(eventType, eventHandler);
+  target.addEventListener(eventName, handler);
   
-  // Store the handler for cleanup
-  if (!scene.data.has('domEventHandlers')) {
-    scene.data.set('domEventHandlers', {});
-  }
-  
-  const handlers = scene.data.get('domEventHandlers');
-  handlers[eventType] = eventHandler;
-}
-
-/**
- * Remove DOM event handlers when scene is destroyed
- * @param scene The Phaser Scene with handlers to remove
- */
-export function cleanupDOMEventHandlers(scene: Phaser.Scene): void {
-  if (scene.data.has('domEventHandlers')) {
-    const handlers = scene.data.get('domEventHandlers');
-    
-    for (const eventType in handlers) {
-      if (Object.prototype.hasOwnProperty.call(handlers, eventType)) {
-        document.removeEventListener(eventType, handlers[eventType]);
-      }
-    }
-    
-    scene.data.set('domEventHandlers', {});
-  }
+  // Return a cleanup function
+  return () => {
+    target.removeEventListener(eventName, handler);
+  };
 }

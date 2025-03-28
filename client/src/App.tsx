@@ -1,25 +1,26 @@
-import React, { useEffect } from 'react';
-import { Interface } from './components/game/Interface';
-import { useAudio } from './lib/stores/useAudio';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
+import { GameView } from './components/game/GameView';
+import { AudioProvider } from './components/AudioProvider';
+import { NotFound } from './pages/not-found';
 
-function App() {
-  const { playMusic } = useAudio();
-
-  // Start background music when the app loads
-  useEffect(() => {
-    playMusic('ambient_music', true);
-    
-    // Cleanup on unmount
-    return () => {
-      // The audio store's stopMusic will be called here
-    };
-  }, [playMusic]);
-
+/**
+ * Main App component that handles routing and global providers
+ */
+export function App() {
   return (
-    <div className="w-screen h-screen bg-black overflow-hidden">
-      <Interface />
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <AudioProvider />
+      <Router>
+        <Routes>
+          {/* Game Route - Main game view */}
+          <Route path="/" element={<GameView />} />
+          
+          {/* 404 Not Found */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+    </QueryClientProvider>
   );
 }
-
-export default App;
