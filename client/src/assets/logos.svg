@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Game Logos and Faction Symbols -->
+  
+  <!-- Main Game Logo -->
+  <g id="main_logo">
+    <rect x="64" y="64" width="384" height="128" rx="16" fill="#3F51B5" />
+    <text x="256" y="120" font-family="sans-serif" font-size="36" font-weight="bold" text-anchor="middle" fill="#FFFFFF">BATTLES OF THE COVENANT</text>
+    <text x="256" y="160" font-family="sans-serif" font-size="16" text-anchor="middle" fill="#C5CAE9">A Book of Mormon Strategy Game</text>
+  </g>
+  
+  <!-- Nephite Symbol -->
+  <g id="nephite_symbol" transform="translate(64 256)">
+    <circle cx="64" cy="64" r="64" fill="#3F51B5" />
+    <path d="M32 96L64 32L96 96L64 80L32 96Z" fill="#FFFFFF" stroke="#1A237E" stroke-width="2" />
+    <path d="M32 80H96M64 32V80" stroke="#1A237E" stroke-width="2" fill="none" />
+    <path d="M64 24A8 8 0 0 1 72 32A8 8 0 0 1 64 40A8 8 0 0 1 56 32A8 8 0 0 1 64 24Z" fill="#FFFFFF" stroke="#1A237E" stroke-width="1" />
+  </g>
+  
+  <!-- Lamanite Symbol -->
+  <g id="lamanite_symbol" transform="translate(192 256)">
+    <circle cx="64" cy="64" r="64" fill="#F44336" />
+    <path d="M34 48L48 76L64 36L80 76L94 48" stroke="#FFFFFF" stroke-width="4" fill="none" />
+    <path d="M48 76L64 94L80 76" stroke="#FFFFFF" stroke-width="4" fill="none" />
+    <path d="M40 76C40 76 52 64 64 64C76 64 88 76 88 76" stroke="#FFFFFF" stroke-width="2" fill="none" />
+    <path d="M52 48C52 48 58 40 64 40C70 40 76 48 76 48" stroke="#FFFFFF" stroke-width="2" fill="none" />
+  </g>
+  
+  <!-- Jaredite Symbol -->
+  <g id="jaredite_symbol" transform="translate(320 256)">
+    <circle cx="64" cy="64" r="64" fill="#4CAF50" />
+    <path d="M32 64C32 48 64 40 64 40C64 40 96 48 96 64C96 80 64 88 64 88C64 88 32 80 32 64Z" fill="none" stroke="#FFFFFF" stroke-width="4" />
+    <path d="M46 54L46 74M64 48L64 80M82 54L82 74" stroke="#FFFFFF" stroke-width="2" />
+    <circle cx="64" cy="64" r="8" fill="#FFFFFF" />
+    <path d="M60 60L68 68M60 68L68 60" stroke="#4CAF50" stroke-width="1" />
+  </g>
+  
+  <!-- Mulekite Symbol -->
+  <g id="mulekite_symbol" transform="translate(64 384)">
+    <circle cx="64" cy="64" r="64" fill="#FFC107" />
+    <path d="M40 36H88L64 64L88 92H40L64 64L40 36Z" fill="#FFFFFF" stroke="#FF8F00" stroke-width="3" />
+    <circle cx="64" cy="64" r="8" fill="#FF8F00" />
+  </g>
+  
+  <!-- Title of Liberty Symbol -->
+  <g id="title_liberty_symbol" transform="translate(192 384)">
+    <circle cx="64" cy="64" r="64" fill="#3F51B5" />
+    <rect x="44" y="40" width="6" height="56" fill="#8B4513" stroke="#5D4037" stroke-width="1" />
+    <path d="M50 40L50 80L90 60L50 40Z" fill="#FFFFFF" stroke="#3F51B5" stroke-width="1" />
+    <text x="70" y="64" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#3F51B5">LIBERTY</text>
+  </g>
+  
+  <!-- Liahona Symbol -->
+  <g id="liahona_symbol" transform="translate(320 384)">
+    <circle cx="64" cy="64" r="64" fill="#9C27B0" />
+    <circle cx="64" cy="64" r="28" fill="none" stroke="#FFFFFF" stroke-width="2" />
+    <circle cx="64" cy="64" r="24" fill="none" stroke="#FFFFFF" stroke-width="1" />
+    <path d="M64 36L70 64L64 92M36 64L64 70L92 64M64 36L58 64L64 92M36 64L64 58L92 64" stroke="#FFFFFF" stroke-width="1" fill="none" />
+    <circle cx="64" cy="64" r="4" fill="#FFFFFF" />
+  </g>
+</svg>

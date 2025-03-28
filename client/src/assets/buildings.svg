@@ -1,0 +1,292 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 640">
+  <!-- Building Sprite Sheet - 16 types of buildings (64x64px each) -->
+  
+  <!-- 0: City Center -->
+  <g id="city_center">
+    <!-- Foundation/Base -->
+    <rect x="16" y="48" width="32" height="8" fill="#8B7355" stroke="#5D4037" stroke-width="1" />
+    <!-- Main building -->
+    <rect x="20" y="24" width="24" height="24" fill="#D7CCC8" stroke="#5D4037" stroke-width="1" />
+    <!-- Roof -->
+    <path d="M20 24L32 12L44 24" fill="#8B4513" stroke="#5D4037" stroke-width="1" />
+    <!-- Door -->
+    <rect x="28" y="40" width="8" height="8" fill="#5D4037" />
+    <!-- Windows -->
+    <rect x="24" y="32" width="4" height="4" fill="#B3E5FC" stroke="#5D4037" stroke-width="0.5" />
+    <rect x="36" y="32" width="4" height="4" fill="#B3E5FC" stroke="#5D4037" stroke-width="0.5" />
+    <!-- Flag -->
+    <rect x="32" y="12" width="1" height="10" fill="#8B4513" />
+    <path d="M33 12L37 14L33 16" fill="#3F51B5" />
+  </g>
+  
+  <!-- 1: Farm -->
+  <g id="farm" transform="translate(64 0)">
+    <!-- Tilled soil -->
+    <path d="M12 48L52 48L52 38L12 38L12 48Z" fill="#8B4513" stroke="#5D4037" stroke-width="1" />
+    <path d="M14 40L50 40M14 42L50 42M14 44L50 44M14 46L50 46" stroke="#5D4037" stroke-width="0.5" />
+    <!-- Crops -->
+    <path d="M16 38L16 32M20 38L20 30M24 38L24 32M28 38L28 30M32 38L32 32M36 38L36 30M40 38L40 32M44 38L44 30M48 38L48 32" stroke="#4CAF50" stroke-width="1" />
+    <path d="M16 32L18 28L14 28M20 30L22 26L18 26M24 32L26 28L22 28M28 30L30 26L26 26M32 32L34 28L30 28M36 30L38 26L34 26M40 32L42 28L38 28M44 30L46 26L42 26M48 32L50 28L46 28" stroke="#4CAF50" stroke-width="1" fill="none" />
+  </g>
+  
+  <!-- 2: Mine -->
+  <g id="mine" transform="translate(128 0)">
+    <!-- Mountain base -->
+    <path d="M10 48L54 48L44 28L20 28L10 48Z" fill="#A9A9A9" stroke="#696969" stroke-width="1" />
+    <!-- Mine entrance -->
+    <path d="M26 48L38 48L38 36L26 36L26 48Z" fill="#5D4037" stroke="#3E2723" stroke-width="1" />
+    <!-- Support beams -->
+    <path d="M26 36L38 36M26 40L38 40M26 44L38 44" stroke="#8B4513" stroke-width="1" />
+    <!-- Ore deposits -->
+    <circle cx="18" cy="34" r="2" fill="#B87333" />
+    <circle cx="42" cy="38" r="2" fill="#B87333" />
+    <circle cx="30" cy="32" r="2" fill="#B87333" />
+    <!-- Cart tracks -->
+    <path d="M32 48L32 52" stroke="#696969" stroke-width="1" />
+    <path d="M28 52L36 52" stroke="#696969" stroke-width="1" />
+  </g>
+  
+  <!-- 3: Temple -->
+  <g id="temple" transform="translate(192 0)">
+    <!-- Foundation/Steps -->
+    <rect x="12" y="48" width="40" height="4" fill="#D7CCC8" stroke="#5D4037" stroke-width="1" />
+    <rect x="16" y="44" width="32" height="4" fill="#D7CCC8" stroke="#5D4037" stroke-width="1" />
+    <!-- Main temple -->
+    <rect x="20" y="20" width="24" height="24" fill="#F5F5F5" stroke="#9E9E9E" stroke-width="1" />
+    <!-- Pillars -->
+    <rect x="22" y="20" width="4" height="24" fill="#E0E0E0" stroke="#9E9E9E" stroke-width="0.5" />
+    <rect x="38" y="20" width="4" height="24" fill="#E0E0E0" stroke="#9E9E9E" stroke-width="0.5" />
+    <!-- Roof -->
+    <path d="M16 20L32 8L48 20" fill="#BDBDBD" stroke="#9E9E9E" stroke-width="1" />
+    <!-- Door -->
+    <rect x="28" y="36" width="8" height="8" fill="#5D4037" />
+    <!-- Windows/Symbols -->
+    <circle cx="32" cy="28" r="4" fill="#3F51B5" stroke="#1A237E" stroke-width="0.5" />
+  </g>
+  
+  <!-- 4: Barracks -->
+  <g id="barracks" transform="translate(256 0)">
+    <!-- Foundation -->
+    <rect x="12" y="48" width="40" height="4" fill="#8B7355" stroke="#5D4037" stroke-width="1" />
+    <!-- Main building -->
+    <rect x="16" y="24" width="32" height="24" fill="#A1887F" stroke="#5D4037" stroke-width="1" />
+    <!-- Roof -->
+    <path d="M16 24L32 16L48 24" fill="#5D4037" stroke="#3E2723" stroke-width="1" />
+    <!-- Door -->
+    <rect x="28" y="40" width="8" height="8" fill="#3E2723" />
+    <!-- Windows -->
+    <rect x="20" y="32" width="4" height="4" fill="#B3E5FC" stroke="#5D4037" stroke-width="0.5" />
+    <rect x="40" y="32" width="4" height="4" fill="#B3E5FC" stroke="#5D4037" stroke-width="0.5" />
+    <!-- Training field -->
+    <path d="M8 56L56 56L56 48L8 48L8 56Z" fill="#A9A9A9" stroke="#696969" stroke-width="0.5" fill-opacity="0.3" stroke-opacity="0.3" />
+  </g>
+  
+  <!-- 5: Marketplace -->
+  <g id="marketplace" transform="translate(320 0)">
+    <!-- Foundation -->
+    <rect x="8" y="48" width="48" height="4" fill="#8B7355" stroke="#5D4037" stroke-width="1" />
+    <!-- Stalls -->
+    <rect x="12" y="36" width="8" height="12" fill="#FFECB3" stroke="#FFA000" stroke-width="1" />
+    <rect x="24" y="36" width="8" height="12" fill="#FFECB3" stroke="#FFA000" stroke-width="1" />
+    <rect x="36" y="36" width="8" height="12" fill="#FFECB3" stroke="#FFA000" stroke-width="1" />
+    <rect x="48" y="36" width="8" height="12" fill="#FFECB3" stroke="#FFA000" stroke-width="1" />
+    <!-- Awnings -->
+    <path d="M12 36L16 30L20 36" fill="#FFD54F" stroke="#FFA000" stroke-width="0.5" />
+    <path d="M24 36L28 30L32 36" fill="#FFD54F" stroke="#FFA000" stroke-width="0.5" />
+    <path d="M36 36L40 30L44 36" fill="#FFD54F" stroke="#FFA000" stroke-width="0.5" />
+    <path d="M48 36L52 30L56 36" fill="#FFD54F" stroke="#FFA000" stroke-width="0.5" />
+    <!-- Goods -->
+    <circle cx="16" cy="40" r="2" fill="#4CAF50" />
+    <circle cx="28" cy="40" r="2" fill="#F44336" />
+    <circle cx="40" cy="40" r="2" fill="#FFC107" />
+    <circle cx="52" cy="40" r="2" fill="#3F51B5" />
+  </g>
+  
+  <!-- 6: Library -->
+  <g id="library" transform="translate(384 0)">
+    <!-- Foundation -->
+    <rect x="12" y="48" width="40" height="4" fill="#8B7355" stroke="#5D4037" stroke-width="1" />
+    <!-- Main building -->
+    <rect x="16" y="20" width="32" height="28" fill="#BCAAA4" stroke="#5D4037" stroke-width="1" />
+    <!-- Roof -->
+    <path d="M16 20L32 12L48 20" fill="#5D4037" stroke="#3E2723" stroke-width="1" />
+    <!-- Door -->
+    <rect x="28" y="40" width="8" height="8" fill="#3E2723" />
+    <!-- Windows -->
+    <rect x="20" y="28" width="4" height="8" fill="#B3E5FC" stroke="#5D4037" stroke-width="0.5" />
+    <rect x="40" y="28" width="4" height="8" fill="#B3E5FC" stroke="#5D4037" stroke-width="0.5" />
+    <!-- Bookshelves visible through windows -->
+    <path d="M21 29L23 29M21 31L23 31M21 33L23 33M41 29L43 29M41 31L43 31M41 33L43 33" stroke="#5D4037" stroke-width="0.5" />
+    <!-- Columns -->
+    <rect x="24" y="20" width="2" height="20" fill="#D7CCC8" stroke="#5D4037" stroke-width="0.5" />
+    <rect x="38" y="20" width="2" height="20" fill="#D7CCC8" stroke="#5D4037" stroke-width="0.5" />
+  </g>
+  
+  <!-- 7: Walls -->
+  <g id="walls" transform="translate(448 0)">
+    <!-- Wall foundation -->
+    <rect x="4" y="44" width="56" height="8" fill="#9E9E9E" stroke="#616161" stroke-width="1" />
+    <!-- Wall segments -->
+    <rect x="8" y="28" width="8" height="16" fill="#BDBDBD" stroke="#616161" stroke-width="1" />
+    <rect x="20" y="28" width="8" height="16" fill="#BDBDBD" stroke="#616161" stroke-width="1" />
+    <rect x="32" y="28" width="8" height="16" fill="#BDBDBD" stroke="#616161" stroke-width="1" />
+    <rect x="44" y="28" width="8" height="16" fill="#BDBDBD" stroke="#616161" stroke-width="1" />
+    <!-- Crenellations -->
+    <rect x="8" y="24" width="8" height="4" fill="#BDBDBD" stroke="#616161" stroke-width="1" />
+    <rect x="20" y="24" width="8" height="4" fill="#BDBDBD" stroke="#616161" stroke-width="1" />
+    <rect x="32" y="24" width="8" height="4" fill="#BDBDBD" stroke="#616161" stroke-width="1" />
+    <rect x="44" y="24" width="8" height="4" fill="#BDBDBD" stroke="#616161" stroke-width="1" />
+  </g>
+  
+  <!-- 8: Temple of Nephi (Nephite) -->
+  <g id="temple_of_nephi" transform="translate(512 0)">
+    <!-- Foundation/Steps -->
+    <rect x="8" y="48" width="48" height="4" fill="#D7CCC8" stroke="#5D4037" stroke-width="1" />
+    <rect x="12" y="44" width="40" height="4" fill="#D7CCC8" stroke="#5D4037" stroke-width="1" />
+    <rect x="16" y="40" width="32" height="4" fill="#D7CCC8" stroke="#5D4037" stroke-width="1" />
+    <!-- Main temple -->
+    <rect x="20" y="16" width="24" height="24" fill="#F5F5F5" stroke="#3F51B5" stroke-width="1" />
+    <!-- Pillars -->
+    <rect x="22" y="16" width="4" height="24" fill="#E0E0E0" stroke="#3F51B5" stroke-width="0.5" />
+    <rect x="38" y="16" width="4" height="24" fill="#E0E0E0" stroke="#3F51B5" stroke-width="0.5" />
+    <!-- Roof -->
+    <path d="M16 16L32 4L48 16" fill="#3F51B5" stroke="#1A237E" stroke-width="1" />
+    <!-- Door -->
+    <rect x="28" y="32" width="8" height="8" fill="#1A237E" />
+    <!-- Sacred symbols -->
+    <circle cx="32" cy="24" r="4" fill="#C5CAE9" stroke="#1A237E" stroke-width="0.5" />
+    <path d="M32 20L32 28M28 24L36 24" stroke="#1A237E" stroke-width="0.5" />
+  </g>
+  
+  <!-- 9: Judgment Seat (Nephite) -->
+  <g id="judgment_seat" transform="translate(576 0)">
+    <!-- Platform -->
+    <rect x="12" y="48" width="40" height="4" fill="#3F51B5" stroke="#1A237E" stroke-width="1" />
+    <!-- Main building -->
+    <rect x="16" y="24" width="32" height="24" fill="#BBDEFB" stroke="#3F51B5" stroke-width="1" />
+    <!-- Roof -->
+    <path d="M16 24L32 16L48 24" fill="#3F51B5" stroke="#1A237E" stroke-width="1" />
+    <!-- Entrance -->
+    <rect x="28" y="40" width="8" height="8" fill="#1A237E" />
+    <!-- Windows -->
+    <rect x="20" y="32" width="4" height="4" fill="#E3F2FD" stroke="#3F51B5" stroke-width="0.5" />
+    <rect x="40" y="32" width="4" height="4" fill="#E3F2FD" stroke="#3F51B5" stroke-width="0.5" />
+    <!-- Symbol of judgment -->
+    <path d="M28 20L36 20M32 16L32 24" stroke="#1A237E" stroke-width="1" />
+  </g>
+  
+  <!-- 10: War Camp (Lamanite) -->
+  <g id="war_camp" transform="translate(640 0)">
+    <!-- Ground -->
+    <rect x="8" y="48" width="48" height="4" fill="#A1887F" stroke="#5D4037" stroke-width="1" />
+    <!-- Tents -->
+    <path d="M16 48L24 32L32 48" fill="#F44336" stroke="#B71C1C" stroke-width="1" />
+    <path d="M32 48L40 32L48 48" fill="#F44336" stroke="#B71C1C" stroke-width="1" />
+    <!-- Campfire -->
+    <circle cx="32" cy="42" r="4" fill="#FFAB00" stroke="#E65100" stroke-width="1" />
+    <path d="M32 38L32 46M28 42L36 42" stroke="#E65100" stroke-width="1" />
+    <!-- Spears -->
+    <path d="M12 48L12 32L10 28L14 28L12 32" fill="#8B4513" stroke="#5D4037" stroke-width="0.5" />
+    <path d="M52 48L52 32L50 28L54 28L52 32" fill="#8B4513" stroke="#5D4037" stroke-width="0.5" />
+  </g>
+  
+  <!-- 11: Hunting Grounds (Lamanite) -->
+  <g id="hunting_grounds" transform="translate(704 0)">
+    <!-- Ground -->
+    <rect x="8" y="48" width="48" height="4" fill="#A1887F" stroke="#5D4037" stroke-width="1" />
+    <!-- Trees -->
+    <path d="M16 48L16 40L12 40L20 40L16 40" fill="#8B4513" stroke="#5D4037" stroke-width="0.5" />
+    <path d="M12 40L16 32L20 40" fill="#33691E" stroke="#1B5E20" stroke-width="0.5" />
+    <path d="M44 48L44 40L40 40L48 40L44 40" fill="#8B4513" stroke="#5D4037" stroke-width="0.5" />
+    <path d="M40 40L44 32L48 40" fill="#33691E" stroke="#1B5E20" stroke-width="0.5" />
+    <!-- Animal track -->
+    <path d="M12 44C20 40 30 52 38 40 46 36" stroke="#5D4037" stroke-width="1" stroke-dasharray="2,2" fill="none" />
+    <!-- Hunting tools -->
+    <path d="M28 48L28 32" stroke="#8B4513" stroke-width="1" />
+    <path d="M28 32L32 28" stroke="#8B4513" stroke-width="1" />
+    <path d="M28 32L24 28" stroke="#8B4513" stroke-width="1" />
+  </g>
+  
+  <!-- 12: Great Tower (Jaredite) -->
+  <g id="great_tower" transform="translate(768 0)">
+    <!-- Foundation -->
+    <rect x="12" y="48" width="40" height="4" fill="#78909C" stroke="#546E7A" stroke-width="1" />
+    <rect x="16" y="44" width="32" height="4" fill="#78909C" stroke="#546E7A" stroke-width="1" />
+    <!-- Tower base -->
+    <rect x="20" y="20" width="24" height="24" fill="#90A4AE" stroke="#546E7A" stroke-width="1" />
+    <!-- Tower top -->
+    <rect x="22" y="8" width="20" height="12" fill="#B0BEC5" stroke="#546E7A" stroke-width="1" />
+    <!-- Windows -->
+    <rect x="26" y="24" width="4" height="4" fill="#B3E5FC" stroke="#546E7A" stroke-width="0.5" />
+    <rect x="34" y="24" width="4" height="4" fill="#B3E5FC" stroke="#546E7A" stroke-width="0.5" />
+    <rect x="26" y="32" width="4" height="4" fill="#B3E5FC" stroke="#546E7A" stroke-width="0.5" />
+    <rect x="34" y="32" width="4" height="4" fill="#B3E5FC" stroke="#546E7A" stroke-width="0.5" />
+    <!-- Entrance -->
+    <rect x="28" y="40" width="8" height="4" fill="#546E7A" />
+    <!-- Tower crown -->
+    <path d="M22 8L32 4L42 8" fill="#4CAF50" stroke="#2E7D32" stroke-width="1" />
+  </g>
+  
+  <!-- 13: Barges (Jaredite) -->
+  <g id="barges" transform="translate(832 0)">
+    <!-- Water -->
+    <rect x="8" y="48" width="48" height="8" fill="#2196F3" stroke="#1976D2" stroke-width="1" fill-opacity="0.7" />
+    <!-- Barge 1 -->
+    <path d="M16 48C16 42 24 42 24 48" fill="#795548" stroke="#5D4037" stroke-width="1" />
+    <!-- Barge 2 -->
+    <path d="M30 48C30 42 38 42 38 48" fill="#795548" stroke="#5D4037" stroke-width="1" />
+    <!-- Barge 3 -->
+    <path d="M44 48C44 42 52 42 52 48" fill="#795548" stroke="#5D4037" stroke-width="1" />
+    <!-- Barge tops -->
+    <rect x="16" y="42" width="8" height="1" fill="#8D6E63" stroke="#5D4037" stroke-width="0.5" />
+    <rect x="30" y="42" width="8" height="1" fill="#8D6E63" stroke="#5D4037" stroke-width="0.5" />
+    <rect x="44" y="42" width="8" height="1" fill="#8D6E63" stroke="#5D4037" stroke-width="0.5" />
+    <!-- Water details -->
+    <path d="M12 52C14 50 16 52 18 50M26 52C28 50 30 52 32 50M40 52C42 50 44 52 46 50" stroke="#64B5F6" stroke-width="0.5" fill="none" />
+  </g>
+  
+  <!-- 14: Marketplace of Zarahemla (Mulekite) -->
+  <g id="marketplace_of_zarahemla" transform="translate(896 0)">
+    <!-- Foundation -->
+    <rect x="8" y="48" width="48" height="4" fill="#8B7355" stroke="#5D4037" stroke-width="1" />
+    <!-- Main building -->
+    <rect x="16" y="24" width="32" height="24" fill="#FFECB3" stroke="#FFC107" stroke-width="1" />
+    <!-- Roof -->
+    <path d="M16 24L32 16L48 24" fill="#FFC107" stroke="#FFA000" stroke-width="1" />
+    <!-- Door -->
+    <rect x="28" y="40" width="8" height="8" fill="#FFA000" />
+    <!-- Windows -->
+    <rect x="20" y="32" width="4" height="4" fill="#FFF9C4" stroke="#FFC107" stroke-width="0.5" />
+    <rect x="40" y="32" width="4" height="4" fill="#FFF9C4" stroke="#FFC107" stroke-width="0.5" />
+    <!-- Market stalls -->
+    <rect x="8" y="44" width="10" height="4" fill="#FFECB3" stroke="#FFA000" stroke-width="0.5" />
+    <rect x="46" y="44" width="10" height="4" fill="#FFECB3" stroke="#FFA000" stroke-width="0.5" />
+    <!-- Goods on display -->
+    <circle cx="10" cy="42" r="1" fill="#F44336" />
+    <circle cx="13" cy="42" r="1" fill="#4CAF50" />
+    <circle cx="16" cy="42" r="1" fill="#3F51B5" />
+    <circle cx="48" cy="42" r="1" fill="#F44336" />
+    <circle cx="51" cy="42" r="1" fill="#4CAF50" />
+    <circle cx="54" cy="42" r="1" fill="#3F51B5" />
+  </g>
+  
+  <!-- 15: Council Hall (Mulekite) -->
+  <g id="council_hall" transform="translate(960 0)">
+    <!-- Foundation -->
+    <rect x="12" y="48" width="40" height="4" fill="#FFC107" stroke="#FFA000" stroke-width="1" />
+    <!-- Main building -->
+    <rect x="16" y="20" width="32" height="28" fill="#FFECB3" stroke="#FFA000" stroke-width="1" />
+    <!-- Roof -->
+    <path d="M16 20L32 12L48 20" fill="#FFA000" stroke="#FF8F00" stroke-width="1" />
+    <!-- Door -->
+    <rect x="28" y="40" width="8" height="8" fill="#FF8F00" />
+    <!-- Windows -->
+    <rect x="20" y="28" width="4" height="8" fill="#FFF9C4" stroke="#FFA000" stroke-width="0.5" />
+    <rect x="40" y="28" width="4" height="8" fill="#FFF9C4" stroke="#FFA000" stroke-width="0.5" />
+    <!-- Columns -->
+    <rect x="18" y="20" width="2" height="28" fill="#FFECB3" stroke="#FFA000" stroke-width="0.5" />
+    <rect x="44" y="20" width="2" height="28" fill="#FFECB3" stroke="#FFA000" stroke-width="0.5" />
+    <!-- Council symbol -->
+    <circle cx="32" cy="16" r="3" fill="#FFF9C4" stroke="#FFA000" stroke-width="0.5" />
+  </g>
+</svg>

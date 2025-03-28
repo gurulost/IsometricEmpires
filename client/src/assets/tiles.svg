@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 288">
+  <!-- Tile Sprite Sheet - 9 types of terrain tiles (64x32px each) -->
+  
+  <!-- 0: Grass Tile -->
+  <g id="grass">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#7CBA45" stroke="#4A8D2B" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#6CB23A" stroke="#4A8D2B" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#5CA032" stroke="#4A8D2B" stroke-width="1" />
+    <!-- Grass details -->
+    <path d="M20 28L24 30L28 26" stroke="#8CCF55" stroke-width="1" fill="none" />
+    <path d="M40 36L44 38L48 34" stroke="#8CCF55" stroke-width="1" fill="none" />
+    <path d="M36 24L40 26L44 22" stroke="#8CCF55" stroke-width="1" fill="none" />
+  </g>
+  
+  <!-- 1: Forest Tile -->
+  <g id="forest" transform="translate(64 0)">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#5CA032" stroke="#4A8D2B" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#4F9329" stroke="#4A8D2B" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#3F7A1F" stroke="#4A8D2B" stroke-width="1" />
+    <!-- Trees -->
+    <path d="M32 16L26 28L38 28L32 16Z" fill="#1E5631" />
+    <rect x="30" y="28" width="4" height="6" fill="#8B4513" />
+    <path d="M45 24L39 36L51 36L45 24Z" fill="#1E5631" />
+    <rect x="43" y="36" width="4" height="6" fill="#8B4513" />
+    <path d="M20 26L14 38L26 38L20 26Z" fill="#1E5631" />
+    <rect x="18" y="38" width="4" height="6" fill="#8B4513" />
+  </g>
+  
+  <!-- 2: Hill Tile -->
+  <g id="hill" transform="translate(128 0)">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#A68A64" stroke="#8A725A" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#998066" stroke="#8A725A" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#897260" stroke="#8A725A" stroke-width="1" />
+    <!-- Hill details - elevation lines -->
+    <path d="M20 32C25 29 37 29 44 32" stroke="#B8A080" stroke-width="1" fill="none" />
+    <path d="M24 36C29 33 35 33 40 36" stroke="#B8A080" stroke-width="1" fill="none" />
+    <path d="M16 28C26 22 38 22 48 28" stroke="#B8A080" stroke-width="1" fill="none" />
+  </g>
+  
+  <!-- 3: Mountain Tile -->
+  <g id="mountain" transform="translate(192 0)">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#8A8A8A" stroke="#6A6A6A" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#777777" stroke="#6A6A6A" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#666666" stroke="#6A6A6A" stroke-width="1" />
+    <!-- Mountain peak -->
+    <path d="M32 16L20 32L44 32L32 16Z" fill="#FFFFFF" stroke="#CCCCCC" />
+    <path d="M24 26L16 38L32 38L24 26Z" fill="#CCCCCC" stroke="#AAAAAA" />
+    <path d="M40 26L32 38L48 38L40 26Z" fill="#CCCCCC" stroke="#AAAAAA" />
+  </g>
+  
+  <!-- 4: Desert Tile -->
+  <g id="desert" transform="translate(256 0)">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#E6CC94" stroke="#D6BC84" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#D6BC84" stroke="#D6BC84" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#C6AC74" stroke="#D6BC84" stroke-width="1" />
+    <!-- Desert details - sand ripples -->
+    <path d="M20 30C25 28 30 28 35 30" stroke="#F4DAA2" stroke-width="1" fill="none" />
+    <path d="M30 36C35 34 40 34 45 36" stroke="#F4DAA2" stroke-width="1" fill="none" />
+    <path d="M10 25C20 20 44 20 54 25" stroke="#F4DAA2" stroke-width="1" fill="none" />
+  </g>
+  
+  <!-- 5: Water Tile -->
+  <g id="water" transform="translate(320 0)">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#3D85C6" stroke="#1C62A8" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#2A75B6" stroke="#1C62A8" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#1A5795" stroke="#1C62A8" stroke-width="1" />
+    <!-- Water details - waves -->
+    <path d="M20 30C25 28 30 28 35 30" stroke="#5A9AD6" stroke-width="1" fill="none" />
+    <path d="M30 36C35 34 40 34 45 36" stroke="#5A9AD6" stroke-width="1" fill="none" />
+    <path d="M12 26C22 22 42 22 52 26" stroke="#5A9AD6" stroke-width="1" fill="none" />
+  </g>
+  
+  <!-- 6: Food Resource Tile -->
+  <g id="resource_food" transform="translate(384 0)">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#8CD965" stroke="#6AB943" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#7CCF55" stroke="#6AB943" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#6CB945" stroke="#6AB943" stroke-width="1" />
+    <!-- Food resource (corn/grain) -->
+    <ellipse cx="32" cy="30" rx="10" ry="5" fill="#F4DA70" stroke="#D9A500" />
+    <ellipse cx="32" cy="25" rx="8" ry="4" fill="#F4DA70" stroke="#D9A500" />
+    <ellipse cx="32" cy="21" rx="6" ry="3" fill="#F4DA70" stroke="#D9A500" />
+    <ellipse cx="32" cy="18" rx="4" ry="2" fill="#F4DA70" stroke="#D9A500" />
+    <rect x="31" y="30" width="2" height="10" fill="#6A8D2B" />
+  </g>
+  
+  <!-- 7: Production Resource Tile -->
+  <g id="resource_production" transform="translate(448 0)">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#B28460" stroke="#A17450" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#A17450" stroke="#A17450" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#916540" stroke="#A17450" stroke-width="1" />
+    <!-- Production resource (ore/mine) -->
+    <path d="M24 22L28 28L36 28L40 22L24 22Z" fill="#666666" stroke="#444444" />
+    <circle cx="26" cy="25" r="1.5" fill="#C6C6C6" />
+    <circle cx="32" cy="26" r="1.5" fill="#C6C6C6" />
+    <circle cx="38" cy="25" r="1.5" fill="#C6C6C6" />
+    <!-- Mine entrance -->
+    <path d="M30 28L30 36L34 36L34 28" fill="#3A3A3A" stroke="#202020" />
+    <rect x="29" y="30" width="6" height="1" fill="#5A5A5A" />
+    <rect x="29" y="33" width="6" height="1" fill="#5A5A5A" />
+  </g>
+  
+  <!-- 8: Faith Resource Tile -->
+  <g id="resource_faith" transform="translate(512 0)">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#A7C6ED" stroke="#7DA7E0" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#97B6DD" stroke="#7DA7E0" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#87A6CD" stroke="#7DA7E0" stroke-width="1" />
+    <!-- Faith resource (scripture/tablet) -->
+    <rect x="26" y="22" width="12" height="16" rx="1" fill="#F4F4F4" stroke="#DADADA" />
+    <path d="M28 26L36 26M28 30L36 30M28 34L36 34" stroke="#6A6A6A" stroke-width="1" fill="none" />
+    <path d="M32 22L32 38" stroke="#6A6A6A" stroke-width="0.5" fill="none" />
+  </g>
+  
+  <!-- Second row of tiles - for additional terrain types or variations -->
+  <!-- For now, these are just copies with slight variations for demonstration -->
+  
+  <!-- Grass Variant -->
+  <g id="grass_variant" transform="translate(0 64)">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#7CBA45" stroke="#4A8D2B" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#6CB23A" stroke="#4A8D2B" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#5CA032" stroke="#4A8D2B" stroke-width="1" />
+    <!-- Flowers -->
+    <circle cx="20" cy="28" r="1.5" fill="#FFFFFF" />
+    <circle cx="40" cy="36" r="1.5" fill="#FFAAAA" />
+    <circle cx="36" cy="24" r="1.5" fill="#FFFFAA" />
+  </g>
+  
+  <!-- Dense Forest -->
+  <g id="dense_forest" transform="translate(64 64)">
+    <path d="M32 16L0 32L32 48L64 32L32 16Z" fill="#4F9329" stroke="#3F7A1F" stroke-width="1" />
+    <path d="M32 16L64 32L64 32L32 48L32 16Z" fill="#3F7A1F" stroke="#3F7A1F" stroke-width="1" />
+    <path d="M0 32L32 48L32 48L0 32L0 32Z" fill="#2F6A15" stroke="#3F7A1F" stroke-width="1" />
+    <!-- More trees -->
+    <path d="M32 14L26 26L38 26L32 14Z" fill="#1E5631" />
+    <rect x="30" y="26" width="4" height="6" fill="#8B4513" />
+    <path d="M45 18L39 30L51 30L45 18Z" fill="#1E5631" />
+    <rect x="43" y="30" width="4" height="6" fill="#8B4513" />
+    <path d="M20 18L14 30L26 30L20 18Z" fill="#1E5631" />
+    <rect x="18" y="30" width="4" height="6" fill="#8B4513" />
+    <path d="M32 28L26 40L38 40L32 28Z" fill="#1E5631" />
+    <rect x="30" y="40" width="4" height="6" fill="#8B4513" />
+  </g>
+  
+  <!-- Remaining positions for additional tile types... -->
+</svg>
